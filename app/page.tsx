@@ -23,7 +23,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="flex min-h-screen flex-col items-center justify-center px-6 py-24">
         <h1
-          className="text-7xl text-zinc-900 sm:text-8xl md:text-9xl"
+          className="text-9xl text-zinc-900 sm:text-[12rem] md:text-[14rem]"
           style={{ fontFamily: "'UnifrakturCook', system-ui", fontWeight: 700 }}
         >
           quint
@@ -36,7 +36,7 @@ export default function Home() {
         </p>
         <button
           onClick={scrollToEarlyAccess}
-          className="mt-12 bg-zinc-900 px-10 py-5 text-xl font-medium text-white"
+          className="mt-12 rounded-lg bg-zinc-900 px-10 py-5 text-xl font-medium text-white"
         >
           Get early access
         </button>
@@ -44,9 +44,9 @@ export default function Home() {
 
       {/* Problem Section */}
       <section className="bg-zinc-50 px-6 py-24">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="text-4xl font-semibold text-zinc-900">The problem</h2>
-          <ul className="mt-8 space-y-4 text-2xl text-zinc-700">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-5xl font-semibold text-zinc-900">The problem</h2>
+          <ul className="mt-8 space-y-4 text-3xl text-zinc-700">
             <li>Too many Telegram channels to follow</li>
             <li>Endless noise drowns out the signal</li>
             <li>Important ideas get lost in the scroll</li>
@@ -57,9 +57,9 @@ export default function Home() {
 
       {/* Solution Section */}
       <section className="px-6 py-24">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="text-4xl font-semibold text-zinc-900">The solution</h2>
-          <div className="mt-8 space-y-6 text-2xl text-zinc-700">
+        <div className="mx-auto max-w-7xl text-right">
+          <h2 className="text-5xl font-semibold text-zinc-900">The solution</h2>
+          <div className="mt-8 space-y-6 text-3xl text-zinc-700">
             <p>
               <span className="font-medium text-zinc-900">quint</span> reads your Telegram channels and extracts what matters.
             </p>
@@ -75,20 +75,20 @@ export default function Home() {
 
       {/* How It Works Section */}
       <section className="bg-zinc-50 px-6 py-24">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="text-4xl font-semibold text-zinc-900">How it works</h2>
-          <div className="mt-12 space-y-12">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-5xl font-semibold text-zinc-900">How it works</h2>
+          <div className="mt-12 space-y-6">
             <div>
-              <p className="text-lg font-medium text-zinc-500">Step 1</p>
-              <p className="mt-2 text-2xl text-zinc-900">Add a Telegram channel</p>
+              <p className="text-xl font-medium text-zinc-500">Step 1</p>
+              <p className="mt-1 text-3xl text-zinc-900">Add a Telegram channel</p>
             </div>
             <div>
-              <p className="text-lg font-medium text-zinc-500">Step 2</p>
-              <p className="mt-2 text-2xl text-zinc-900">AI analyzes the content</p>
+              <p className="text-xl font-medium text-zinc-500">Step 2</p>
+              <p className="mt-1 text-3xl text-zinc-900">AI analyzes the content</p>
             </div>
             <div>
-              <p className="text-lg font-medium text-zinc-500">Step 3</p>
-              <p className="mt-2 text-2xl text-zinc-900">Get structured insights</p>
+              <p className="text-xl font-medium text-zinc-500">Step 3</p>
+              <p className="mt-1 text-3xl text-zinc-900">Get structured insights</p>
             </div>
           </div>
         </div>
@@ -109,11 +109,11 @@ export default function Home() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@email.com"
                 required
-                className="w-full border border-zinc-300 bg-white px-5 py-4 text-xl text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none"
+                className="w-full rounded-lg border border-zinc-300 bg-white px-5 py-4 text-xl text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none"
               />
               <button
                 type="submit"
-                className="mt-4 w-full bg-zinc-900 px-10 py-5 text-xl font-medium text-white"
+                className="mt-4 w-full rounded-lg bg-zinc-900 px-10 py-5 text-xl font-medium text-white"
               >
                 Join the waitlist
               </button>
