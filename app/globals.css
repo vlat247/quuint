@@ -23,3 +23,82 @@
   font-weight: 700;
   font-style: normal;
 }
+
+.bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+/* Subtle shake animation for quint title */
+@keyframes subtle-shake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(0.5px, 0); }
+  50% { transform: translate(-0.5px, 0.3px); }
+  75% { transform: translate(0.5px, -0.3px); }
+}
+
+.quint-shake {
+  animation: subtle-shake 0.15s ease-in-out infinite;
+}
+
+/* Chaotic shake for text - more irregular pattern */
+@keyframes chaotic-shake {
+  0% { transform: translate(0, 0); }
+  10% { transform: translate(-0.3px, 0.2px); }
+  20% { transform: translate(0.4px, -0.1px); }
+  30% { transform: translate(-0.2px, -0.3px); }
+  40% { transform: translate(0.3px, 0.4px); }
+  50% { transform: translate(-0.4px, 0.1px); }
+  60% { transform: translate(0.2px, -0.2px); }
+  70% { transform: translate(-0.3px, 0.3px); }
+  80% { transform: translate(0.4px, -0.4px); }
+  90% { transform: translate(-0.2px, 0.2px); }
+  100% { transform: translate(0, 0); }
+}
+
+.text-shake {
+  animation: chaotic-shake 0.2s ease-in-out infinite;
+}
+
+/* Text glow animation */
+@keyframes text-glow {
+  0%, 100% { 
+    color: white;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); 
+  }
+  50% { 
+    color: white;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.4); 
+  }
+}
+
+.text-glow {
+  animation: text-glow 1.5s ease-in-out infinite;
+  color: white;
+}
+
+/* Vignette overlay */
+.vignette-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    rgba(0, 0, 0, var(--vignette-opacity, 0)) 100%
+  );
+  transition: background 0.3s ease-out;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .quint-shake {
+    animation: none;
+  }
+  .vignette-overlay {
+    display: none;
+  }
+}
