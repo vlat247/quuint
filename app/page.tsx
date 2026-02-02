@@ -79,7 +79,7 @@ export default function Home() {
       {/* Header */}
       <Header />
 
-      {/* Vignette Overlay */}
+      {/* Vignette Overlay - outside animated container to work with header z-index */}
       <div
         className="vignette-overlay"
         style={{
@@ -87,8 +87,10 @@ export default function Home() {
         }}
       />
 
-      {/* Hero Section */}
-      <section className="flex min-h-screen flex-col items-center justify-center px-6 py-24">
+      {/* Animated Content */}
+      <div className="animate-page-fade-in">
+        {/* Hero Section */}
+        <section className="flex min-h-screen flex-col items-center justify-center px-6 py-24">
         <h1
           ref={titleRef}
           className={`text-9xl text-zinc-900 sm:text-[12rem] md:text-[14rem] ${shouldShake ? "quint-shake" : ""}`}
@@ -201,6 +203,7 @@ export default function Home() {
           © 2026 quint
         </p>
       </footer>
+      </div>
     </div>
   );
 }
