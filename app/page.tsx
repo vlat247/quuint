@@ -1,61 +1,21 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
+import { AuroraBackground } from "@/components/AuroraBackground";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [intensity, setIntensity] = useState(0);
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
 
-  // Mouse proximity effect
   useEffect(() => {
-    let lastMouseX = 0;
-    let lastMouseY = 0;
-
-    const calculateIntensity = () => {
-      if (!titleRef.current) return;
-
-      const rect = titleRef.current.getBoundingClientRect();
-      const titleCenterX = rect.left + rect.width / 2;
-      const titleCenterY = rect.top + rect.height / 2;
-
-      const distance = Math.sqrt(
-        Math.pow(lastMouseX - titleCenterX, 2) + 
-        Math.pow(lastMouseY - titleCenterY, 2)
-      );
-
-      // Effect starts at 350px, max intensity at 80px
-      const maxDistance = 150;
-      const minDistance = 50;
-      
-      if (distance > maxDistance) {
-        setIntensity(0);
-      } else if (distance < minDistance) {
-        setIntensity(1);
-      } else {
-        const normalizedDistance = (distance - minDistance) / (maxDistance - minDistance);
-        setIntensity(1 - normalizedDistance);
-      }
-    };
-
     const handleMouseMove = (e: MouseEvent) => {
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-      calculateIntensity();
+      setMousePos({ x: e.clientX, y: e.clientY });
     };
-
-    const handleScroll = () => {
-      calculateIntensity();
-    };
-
+    
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -70,55 +30,89 @@ export default function Home() {
     element?.scrollIntoView({ behavior: "auto" });
   };
 
-  // Vignette opacity scales from 0 to 0.5 based on intensity
-  const vignetteOpacity = intensity * 0.5;
-  const shouldShake = intensity > 0.2;
-
   return (
     <div className="min-h-screen bg-white">
+      {/* Aurora Background */}
+      <AuroraBackground />
+
       {/* Header */}
       <Header />
 
-      {/* Vignette Overlay - outside animated container to work with header z-index */}
-      <div
-        className="vignette-overlay"
+      {/* Top darkening overlay */}
+      <div 
+        className="pointer-events-none fixed inset-x-0 top-0 z-[65] h-32"
         style={{
-          background: `radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, ${vignetteOpacity}) 100%)`,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.08) 40%, transparent 100%)",
         }}
+        aria-hidden="true"
       />
+
+      {/* Subtle Grid Overlay */}
+      <div className="pointer-events-none fixed inset-0 z-[5]">
+        {/* Base grid - always visible */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
+            `,
+            backgroundSize: "60px 60px",
+          }}
+          aria-hidden="true"
+        />
+        {/* Darker grid - only visible near cursor */}
+        <div 
+          className="absolute inset-0 transition-opacity duration-100"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(0,0,0,0.15) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,0,0,0.15) 1px, transparent 1px)
+            `,
+            backgroundSize: "60px 60px",
+            maskImage: `radial-gradient(circle 150px at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
+            WebkitMaskImage: `radial-gradient(circle 150px at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
+          }}
+          aria-hidden="true"
+        />
+      </div>
 
       {/* Animated Content */}
       <div className="animate-page-fade-in">
         {/* Hero Section */}
         <section className="flex min-h-screen flex-col items-center justify-center px-6 py-24">
-        <h1
-          ref={titleRef}
-          className={`text-9xl text-zinc-900 sm:text-[12rem] md:text-[14rem] ${shouldShake ? "quint-shake" : ""}`}
-          style={{ fontFamily: "'UnifrakturCook', system-ui", fontWeight: 700 }}
-        >
-          quint
-        </h1>
-        <p className={`mt-8 max-w-xl text-center text-3xl text-zinc-900 sm:text-4xl ${shouldShake ? "text-shake" : ""}`}>
+        {/* Logo with soft gray glow */}
+        <div className="relative">
+          {/* Soft glow behind logo */}
+          <div 
+            className="absolute inset-0 blur-3xl"
+            style={{
+              background: "radial-gradient(ellipse 100% 100% at 50% 50%, rgba(120,120,120,0.25) 0%, transparent 70%)",
+              transform: "scale(1.5)",
+            }}
+            aria-hidden="true"
+          />
+          <h1
+            className="relative text-9xl text-zinc-900 sm:text-[12rem] md:text-[14rem]"
+            style={{ fontFamily: "'UnifrakturCook', system-ui", fontWeight: 700 }}
+          >
+            quint
+          </h1>
+        </div>
+        <p className="mt-8 max-w-xl text-center text-3xl text-zinc-900 sm:text-4xl">
           Turn Telegram chaos into clear, structured knowledge.
         </p>
-        <p className={`mt-4 text-center text-xl text-zinc-500 ${shouldShake ? "text-shake" : ""}`}>
-          AI summaries for the channels that matter.
-        </p>
+  
         <button
           onClick={scrollToEarlyAccess}
           className="mt-6 rounded-lg bg-zinc-900 px-10 py-5 text-xl font-medium text-white"
         >
-          <span 
-            className={shouldShake ? "text-glow" : ""}
-            style={shouldShake ? { color: 'white' } : {}}
-          >
-            Get early access
-          </span>
+          Get early access
         </button>
       </section>
 
       {/* Problem Section */}
-      <section className="bg-zinc-50 bg-grid px-6 py-24">
+      <section className="bg-zinc-50 px-6 py-24">
         <div className="mx-auto max-w-7xl">
           <h2 className="text-7xl font-semibold text-zinc-900">The problem</h2>
           <ul className="mt-8 space-y-4 text-3xl text-zinc-700">
@@ -149,7 +143,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="bg-zinc-50 bg-grid px-6 py-24">
+      <section className="bg-zinc-50 px-6 py-24">
         <div className="mx-auto max-w-7xl">
           <h2 className="text-7xl font-semibold text-zinc-900">How it works</h2>
           <div className="mt-12 space-y-3">
