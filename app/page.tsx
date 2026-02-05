@@ -4,10 +4,13 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { BuiltForScroller } from "@/components/BuiltForScroller";
+import { submitEmail } from "./actions";
+import { X } from "lucide-react";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [activeTab, setActiveTab] = useState<"summary" | "topics" | "search">("summary");
 
@@ -20,10 +23,19 @@ export default function Home() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      setSubmitted(true);
+    if (email && !loading) {
+      setLoading(true);
+      const result = await submitEmail(email);
+      setLoading(false);
+      
+      if (result.success) {
+        setSubmitted(true);
+        setEmail("");
+      } else {
+        alert(result.error || "Something went wrong. Please try again.");
+      }
     }
   };
 
@@ -366,11 +378,37 @@ export default function Home() {
 
         {/* Early Access Section */}
         <section id="early-access" className="px-6 py-24">
-          <div className="mx-auto max-w-md text-center">
+          <div className="relative mx-auto max-w-md text-center">
             <h2 className="text-4xl font-semibold text-zinc-900">Get early access</h2>
             <p className="mt-4 text-xl text-zinc-500">Limited spots available.</p>
+            
             {submitted ? (
-              <p className="mt-8 text-2xl text-zinc-900">Thanks! We&apos;ll be in touch.</p>
+              <div className="relative mt-8 w-full scale-100 rounded-2xl border border-zinc-200 bg-white p-10 shadow-xl animate-in zoom-in-95 duration-300">
+                {/* Close Cross Button */}
+                <button 
+                  onClick={() => setSubmitted(false)}
+                  className="absolute right-4 top-4 cursor-pointer rounded-full p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                  aria-label="Close message"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+
+                <div className="text-center">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-3xl">
+                    ✨
+                  </div>
+                  <h3 className="mb-4 text-3xl font-semibold text-zinc-900">Waitlist Joined!</h3>
+                  <p className="text-xl leading-relaxed text-zinc-600">
+                    Thank you for interesting in our product! We will let you know soon when it is releases!
+                  </p>
+                  <button
+                    onClick={() => setSubmitted(false)}
+                    className="mt-8 w-full cursor-pointer rounded-lg bg-zinc-900 px-8 py-4 text-lg font-medium text-white transition-all hover:bg-zinc-800"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="mt-8">
                 <input
@@ -383,9 +421,10 @@ export default function Home() {
                 />
                 <button
                   type="submit"
-                  className="mt-4 w-full cursor-pointer rounded-lg bg-zinc-900 px-10 py-5 text-xl font-medium text-white transition-all hover:bg-zinc-800 hover:scale-[1.02]"
+                  disabled={loading}
+                  className="mt-4 w-full cursor-pointer rounded-lg bg-zinc-900 px-10 py-5 text-xl font-medium text-white transition-all hover:bg-zinc-800 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Join the waitlist
+                  {loading ? "Joining..." : "Join the waitlist"}
                 </button>
               </form>
             )}
