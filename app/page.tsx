@@ -110,14 +110,14 @@ export default function Home() {
                   aria-hidden="true"
                 />
                 <h1
-                  className="relative text-7xl text-zinc-900 sm:text-8xl lg:text-9xl"
+                  className="relative text-7xl text-zinc-900 sm:text-12xl lg:text-9xl"
                   style={{ fontFamily: "'UnifrakturCook', system-ui", fontWeight: 700 }}
                 >
                   quint
                 </h1>
               </div>
               
-              <p className="mt-6 max-w-lg text-2xl text-zinc-700 sm:text-3xl">
+              <p className="mt-6 max-w-lg font-semibold text-2xl text-zinc-700 sm:text-3xl">
                 Turn Telegram chaos into clear, structured knowledge.
               </p>
               
@@ -220,7 +220,7 @@ export default function Home() {
       <section className="sticky top-0 z-10 flex min-h-screen flex-col justify-center bg-zinc-50 px-6 py-24">
         <div className="mx-auto w-full max-w-7xl">
           {/* Section Number - Right side (opposite of left-aligned text) */}
-          <div className="absolute right-18 top-24 select-none text-[20rem] font-bold leading-none text-zinc-200 opacity-40 transition-all duration-500 ease-out hover:-translate-x-1 hover:opacity-60 motion-reduce:transition-none motion-reduce:hover:translate-x-0">
+          <div className="absolute right-18 top-1/2 -translate-y-1/2 select-none text-[20rem] font-bold leading-none text-zinc-200 opacity-60 transition-all duration-500 ease-out hover:-translate-x-1 hover:opacity-80 motion-reduce:transition-none motion-reduce:hover:translate-x-0">
             01
           </div>
           
@@ -240,7 +240,7 @@ export default function Home() {
       <section className="sticky top-0 z-20 flex min-h-screen flex-col justify-center bg-white px-6 py-24">
         <div className="mx-auto w-full max-w-7xl text-right">
           {/* Section Number - Left side (opposite of right-aligned text) */}
-          <div className="absolute left-18 top-24 select-none text-[20rem] font-bold leading-none text-zinc-200 opacity-40 transition-all duration-500 ease-out hover:translate-x-1 hover:opacity-60 motion-reduce:transition-none motion-reduce:hover:translate-x-0">
+          <div className="absolute left-18 top-1/2 -translate-y-1/2 select-none text-[20rem] font-bold leading-none text-zinc-200 opacity-60 transition-all duration-500 ease-out hover:translate-x-1 hover:opacity-80 motion-reduce:transition-none motion-reduce:hover:translate-x-0">
             02
           </div>
           
@@ -268,27 +268,27 @@ export default function Home() {
               
               {/* Feed items - minimal styling */}
               <div className="space-y-0 border-l border-zinc-300 pl-6">
-                <div className="py-2 text-2xl text-zinc-600">
+                <div className="py-2 text-xl text-zinc-600">
                   <div className="font-medium text-zinc-900">@crypto_news</div>
                   <div className="mt-1">🚀 BTC breaking out! Don't miss this...</div>
                 </div>
                 
-                <div className="border-t border-zinc-200 py-2 text-2xl text-zinc-600">
+                <div className="border-t border-zinc-200 py-2 text-xl text-zinc-600">
                   <div className="font-medium text-zinc-900">@startup_tips</div>
                   <div className="mt-1">Thread on pricing psychology 1/12...</div>
                 </div>
                 
-                <div className="border-t border-zinc-200 py-2 text-2xl text-zinc-600">
+                <div className="border-t border-zinc-200 py-2 text-xl text-zinc-600">
                   <div className="font-medium text-zinc-900">@marketing_hacks</div>
                   <div className="mt-1">10 things about retention...</div>
                 </div>
                 
-                <div className="border-t border-zinc-200 py-2 text-2xl text-zinc-600">
+                <div className="border-t border-zinc-200 py-2 text-xl text-zinc-600">
                   <div className="font-medium text-zinc-900">@dev_news</div>
                   <div className="mt-1">New React update dropped...</div>
                 </div>
                 
-                <div className="border-t border-zinc-200 py-2 text-2xl text-zinc-600">
+                <div className="border-t border-zinc-200 py-2 text-xl text-zinc-600">
                   <div className="font-medium text-zinc-900">@finance_daily</div>
                   <div className="mt-1">Markets are crashing...</div>
                 </div>
@@ -308,7 +308,7 @@ export default function Home() {
                 {/* Summary */}
                 <div>
                   <div className="mb-2 text-sm font-medium uppercase tracking-wider text-zinc-400">Summary</div>
-                  <p className="text-3xl leading-relaxed text-zinc-900">
+                  <p className="text-xl leading-relaxed text-zinc-900">
                     Startup growth strategies with focus on product-led growth. Pricing psychology drives 40% of conversion.
                   </p>
                 </div>
@@ -319,7 +319,7 @@ export default function Home() {
                 {/* Topics */}
                 <div>
                   <div className="mb-2 text-sm font-medium uppercase tracking-wider text-zinc-400">Topics</div>
-                  <div className="space-y-2 text-2xl text-zinc-700">
+                  <div className="space-y-2 text-xl text-zinc-700">
                     <div>Pricing <span className="text-zinc-400">(12)</span></div>
                     <div>Retention <span className="text-zinc-400">(8)</span></div>
                     <div>Growth <span className="text-zinc-400">(6)</span></div>
@@ -332,7 +332,7 @@ export default function Home() {
                 {/* Search */}
                 <div>
                   <div className="mb-2 text-sm font-medium uppercase tracking-wider text-zinc-400">Search</div>
-                  <div className="text-2xl text-zinc-600">
+                  <div className="text-xl text-zinc-600">
                     <div className="mb-1 text-zinc-900">"What's the best pricing strategy?"</div>
                     <div>Freemium with 14-day trial</div>
                   </div>
@@ -349,7 +349,7 @@ export default function Home() {
         <section className="px-6 py-24">
           <div className="mx-auto max-w-7xl">
             {/* Section Number - Right side (opposite of left-aligned text) */}
-            <div className="absolute right-18 top-24 select-none text-[20rem] font-bold leading-none text-zinc-200 opacity-40 transition-all duration-500 ease-out hover:-translate-x-1 hover:opacity-60 motion-reduce:transition-none motion-reduce:hover:translate-x-0">
+            <div className="absolute right-18 top-24 select-none text-[20rem] font-bold leading-none text-zinc-200 opacity-60 transition-all duration-500 ease-out hover:-translate-x-1 hover:opacity-80 motion-reduce:transition-none motion-reduce:hover:translate-x-0">
               03
             </div>
             
@@ -358,15 +358,15 @@ export default function Home() {
               <div className="mt-12 space-y-3">
                 <div>
                   <p className="text-xl font-medium text-zinc-500">Step 1</p>
-                  <p className="mt-1 text-3xl text-zinc-900">Add a Telegram channel</p>
+                  <p className="mt-1 text-xl text-zinc-900">Add a Telegram channel</p>
                 </div>
                 <div>
                   <p className="text-xl font-medium text-zinc-500">Step 2</p>
-                  <p className="mt-1 text-3xl text-zinc-900">AI analyzes the content</p>
+                  <p className="mt-1 text-xl text-zinc-900">AI analyzes the content</p>
                 </div>
                 <div>
                   <p className="text-xl font-medium text-zinc-500">Step 3</p>
-                  <p className="mt-1 text-3xl text-zinc-900">Get structured insights</p>
+                  <p className="mt-1 text-xl text-zinc-900">Get structured insights</p>
                 </div>
               </div>
             </div>

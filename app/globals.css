@@ -4,7 +4,7 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-markazi);
+  --font-sans: var(--font-space-grotesk);
   --font-unifraktur: var(--font-unifraktur);
 }
 

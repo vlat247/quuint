@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-import { Markazi_Text, UnifrakturCook } from "next/font/google";
+import { Space_Grotesk, UnifrakturCook } from "next/font/google";
 import "./globals.css";
 
 export const unifraktur = UnifrakturCook({
   weight: "700",
   subsets: ["latin"],
   display: "swap",
+  variable: "--font-unifraktur",
 });
 
-const markaziText = Markazi_Text({
-  variable: "--font-markazi",
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-space-grotesk",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${markaziText.variable} antialiased font-sans`}>
+      <body className={`${spaceGrotesk.variable} ${unifraktur.variable} antialiased font-sans`}>
         {children}
       </body>
     </html>
