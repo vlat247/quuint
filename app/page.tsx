@@ -401,12 +401,20 @@ export default function Home() {
                   <p className="text-xl leading-relaxed text-zinc-600">
                     Thank you for interesting in our product! We will let you know soon when it is releases!
                   </p>
-                  <button
-                    onClick={() => setSubmitted(false)}
-                    className="mt-8 w-full cursor-pointer rounded-lg bg-zinc-900 px-8 py-4 text-lg font-medium text-white transition-all hover:bg-zinc-800"
-                  >
-                    Close
-                  </button>
+                  <div className="mt-8 grid gap-3">
+                    <a
+                      href="/demo"
+                      className="flex w-full items-center justify-center rounded-lg bg-zinc-900 px-8 py-4 text-lg font-medium text-white transition-all hover:bg-zinc-800"
+                    >
+                      Try the demo
+                    </a>
+                    <button
+                      onClick={() => setSubmitted(false)}
+                      className="w-full cursor-pointer rounded-lg bg-transparent px-8 py-2 text-base font-medium text-zinc-500 transition-all hover:text-zinc-900"
+                    >
+                      Close and add another email
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (

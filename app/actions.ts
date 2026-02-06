@@ -2,13 +2,16 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-// Initialize Supabase with Service Role Key for secure server-side operations
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-
 export async function submitEmail(email: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    console.error('Missing Supabase environment variables');
+    return { success: false, error: 'Server configuration error' };
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
   try {
     // Basic validation
     if (!email || !email.includes('@')) {
