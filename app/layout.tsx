@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, UnifrakturCook } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const unifraktur = UnifrakturCook({
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${spaceGrotesk.variable} ${unifraktur.variable} antialiased font-sans`}>
         {children}
+        <Analytics />
       </body>
     </html>
   );

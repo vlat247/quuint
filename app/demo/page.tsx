@@ -54,7 +54,7 @@ export default function DemoPage() {
             },
             cached: parsedData.cached,
             is_mock: parsedData.is_mock,
-          };
+          } as any;
         } else {
           // Fallback: wrap in 'result' if not already there
           parsedData = {
@@ -63,7 +63,7 @@ export default function DemoPage() {
               insights: parsedData?.insights || [],
               readers: parsedData?.readers || '',
             }
-          };
+          } as any;
         }
       } catch (parseError) {
         console.error('Failed to parse nested summary JSON:', parseError);
@@ -74,7 +74,7 @@ export default function DemoPage() {
             insights: parsedData?.insights || [],
             readers: parsedData?.readers || '',
           }
-        };
+        } as any;
       }
       
       setData(parsedData);
