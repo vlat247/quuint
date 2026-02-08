@@ -18,8 +18,8 @@ export function BuiltForScroller() {
     "Knowledge workers",
   ];
 
-  // Duplicate items for seamless loop
-  const duplicatedItems = [...items, ...items];
+  // Duplicate items for seamless loop (4x to ensure coverage on wide screens)
+  const duplicatedItems = [...items, ...items, ...items, ...items];
 
   return (
     <section className="relative overflow-hidden bg-zinc-50 py-16">
@@ -36,7 +36,7 @@ export function BuiltForScroller() {
           WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)",
         }}
       >
-        <div className="flex animate-scroll hover:[animation-play-state:paused]">
+        <div className="flex w-max animate-scroll hover:[animation-play-state:paused]">
           {duplicatedItems.map((item, index) => (
             <span
               key={index}
@@ -59,7 +59,7 @@ export function BuiltForScroller() {
         }
         
         .animate-scroll {
-          animation: scroll 20s linear infinite;
+          animation: scroll 60s linear infinite;
         }
       `}</style>
     </section>

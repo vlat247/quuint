@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { analyzeChannel } from "@/app/actions";
 import { Header } from "@/components/Header";
 import { AuroraBackground } from "@/components/AuroraBackground";
 
 export default function DemoPage() {
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email");
+  const [data, setData] = useState<any>(null);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [channel, setChannel] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,16 +25,63 @@ export default function DemoPage() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const handleAnalyze = (e: React.FormEvent) => {
+  const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!channel) return;
     
+    const emailToUse = email || "demo@quint.com"; 
+
     setLoading(true);
-    // Simulate analysis delay
-    setTimeout(() => {
-      setLoading(false);
+    const result = await analyzeChannel(emailToUse, channel);
+    setLoading(false);
+    
+    if (result.success) {
+      // Backend returns { summary: "JSON string", insights: [], readers: string }
+      // The 'summary' field contains a nested JSON with the actual data
+      let parsedData = result.data;
+      
+      try {
+        // Parse the nested JSON in 'summary' field if it exists
+        if (parsedData?.summary && typeof parsedData.summary === 'string') {
+          const nestedData = JSON.parse(parsedData.summary);
+          // Normalize to the structure the UI expects
+          parsedData = {
+            result: {
+              title: nestedData.title || parsedData.title,
+              summary: nestedData.summary || 'No summary available.',
+              insights: nestedData.insights || [],
+              readers: nestedData.readers || parsedData.readers || '',
+            },
+            cached: parsedData.cached,
+            is_mock: parsedData.is_mock,
+          };
+        } else {
+          // Fallback: wrap in 'result' if not already there
+          parsedData = {
+            result: {
+              summary: parsedData?.summary || 'No summary available.',
+              insights: parsedData?.insights || [],
+              readers: parsedData?.readers || '',
+            }
+          };
+        }
+      } catch (parseError) {
+        console.error('Failed to parse nested summary JSON:', parseError);
+        // Keep raw data if parsing fails
+        parsedData = {
+          result: {
+            summary: String(parsedData?.summary || 'Analysis complete.'),
+            insights: parsedData?.insights || [],
+            readers: parsedData?.readers || '',
+          }
+        };
+      }
+      
+      setData(parsedData);
       setAnalyzed(true);
-    }, 1500);
+    } else {
+      alert(result.error || "Analysis failed. Please try again.");
+    }
   };
 
   return (
@@ -167,25 +219,20 @@ export default function DemoPage() {
                     <div>
                       <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-2">Primary Intent</h3>
                       <p className="text-xl leading-relaxed text-zinc-800">
-                        This channel focuses on <span className="font-medium bg-yellow-100 px-1 rounded">technological trends</span> and their impact on global markets. 
-                        Most discussions revolve around AI adoption, crypto regulation, and SaaS scaling strategies.
+                        {data?.result?.summary || "Analysis not available."}
                       </p>
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-2">Key Takeaways</h3>
                       <ul className="space-y-3 text-lg text-zinc-700">
-                        <li className="flex items-start gap-2">
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-zinc-400 shrink-0"></span>
-                          <span>AI agents are becoming the new standard for B2B tools.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-zinc-400 shrink-0"></span>
-                          <span>Bitcoin's recent volatility is linked to ETF inflows.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-zinc-400 shrink-0"></span>
-                          <span>Founder mental health is trending as a major topic.</span>
-                        </li>
+                        {data?.result?.insights?.map((insight: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-zinc-400 shrink-0"></span>
+                            <span>{insight}</span>
+                          </li>
+                        )) || (
+                          <li>No insights generated.</li>
+                        )}
                       </ul>
                     </div>
                   </div>
@@ -195,34 +242,18 @@ export default function DemoPage() {
                   <div className="animate-in fade-in duration-300">
                     <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-4">Trending Topics</h3>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors cursor-default">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-medium text-zinc-900">Artificial Intelligence</span>
-                          <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">32 posts</span>
-                        </div>
-                        <p className="text-sm text-zinc-500">LLMs, Agents, Automation, Ethics</p>
-                      </div>
-                      <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors cursor-default">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-medium text-zinc-900">Crypto Markets</span>
-                          <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">18 posts</span>
-                        </div>
-                        <p className="text-sm text-zinc-500">BTC, ETH, Regulation, ETFs</p>
-                      </div>
-                      <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors cursor-default">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-medium text-zinc-900">SaaS Growth</span>
-                          <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">12 posts</span>
-                        </div>
-                        <p className="text-sm text-zinc-500">PLG, Pricing, Churn, ARR</p>
-                      </div>
-                      <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors cursor-default">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-medium text-zinc-900">Venture Capital</span>
-                          <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">8 posts</span>
-                        </div>
-                        <p className="text-sm text-zinc-500">Funding, Valuations, Exits</p>
-                      </div>
+                      {data?.result?.readers ? (
+                        data.result.readers.split(",").map((topic: string, i: number) => (
+                          <div key={i} className="p-4 rounded-xl bg-white border border-zinc-200 shadow-sm hover:border-zinc-300 transition-colors cursor-default">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="font-medium text-zinc-900">{topic.trim()}</span>
+                              <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">Detected</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-zinc-500">No topics detected.</p>
+                      )}
                     </div>
                   </div>
                 )}
