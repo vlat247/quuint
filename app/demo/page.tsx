@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { analyzeChannel } from "@/app/actions";
 import { Header } from "@/components/Header";
 import { AuroraBackground } from "@/components/AuroraBackground";
 
-export default function DemoPage() {
+function DemoPageContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
   const [data, setData] = useState<any>(null);
@@ -348,5 +348,14 @@ export default function DemoPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Wrap in Suspense for useSearchParams (required for static export)
+export default function DemoPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <DemoPageContent />
+    </Suspense>
   );
 }
