@@ -59,7 +59,7 @@ export function BuiltForScroller() {
         }
         
         .animate-scroll {
-          animation: scroll 60s linear infinite;
+          animation: scroll 120s linear infinite;
         }
       `}</style>
     </section>

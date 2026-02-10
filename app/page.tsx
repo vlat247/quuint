@@ -277,24 +277,22 @@ export default function Home() {
          <div className="mx-auto w-full max-w-7xl">
           <div className="flex items-end flex-row-reverse justify-between mb-12">
              <h2 className="text-6xl font-semibold tracking-tight text-zinc-900 lg:text-8xl">The solution</h2>
-              <div className="hidden lg:block select-none text-[12rem] font-bold leading-none text-zinc-100">02</div>
+              <div className="hidden lg:block select-none text-[15rem] font-bold leading-none text-zinc-100">02</div>
           </div>
           
-           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
              {[
                 { title: "Structured summaries", desc: "We extract the core value.", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
                 { title: "Topic grouping", desc: "See what's trending over time.", icon: "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" },
                 { title: "Semantic search", desc: "Find answers, not just keywords.", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
                 { title: "One system", desc: "All your knowledge in one place.", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" }
              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-4 rounded-2xl bg-zinc-50 p-6 transition-colors hover:bg-zinc-100 border border-zinc-100/50">
-                   <div className="shrink-0 rounded-xl bg-white p-3 shadow-sm border border-zinc-200 text-zinc-900">
-                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} /></svg>
+                <div key={i} className="group relative overflow-hidden rounded-2xl bg-zinc-50 p-8 transition-all hover:-translate-y-1 border border-zinc-100">
+                   <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white text-zinc-900 group-hover:bg-zinc-900 group-hover:text-white transition-colors border border-zinc-200">
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} /></svg>
                    </div>
-                   <div>
-                       <h3 className="text-lg font-semibold text-zinc-900">{item.title}</h3>
-                       <p className="text-sm text-zinc-500 leading-relaxed mt-1">{item.desc}</p>
-                   </div>
+                   <h3 className="mb-2 text-xl font-semibold text-zinc-900">{item.title}</h3>
+                   <p className="text-zinc-500">{item.desc}</p>
                 </div>
              ))}
            </div>
