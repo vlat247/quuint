@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 
 export async function submitEmail(email: string) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,7 +15,8 @@ export async function submitEmail(email: string) {
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
   try {
     // Basic validation
-    if (!email || !email.includes('@')) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
       return { success: false, error: 'Invalid email address' };
     }
 
@@ -25,10 +27,29 @@ export async function submitEmail(email: string) {
     if (error) {
       // Handle unique constraint violation (PGRST116 or 23505)
       if (error.code === '23505') {
+        // Even if already registered, set the cookie so they can access the demo
+        const cookieStore = await cookies();
+        cookieStore.set('quint_early_access', 'true', { 
+          httpOnly: true, 
+          secure: process.env.NODE_ENV === 'production', 
+          sameSite: 'lax', 
+          path: '/',
+          maxAge: 60 * 60 * 24 * 365 // 1 year
+        });
         return { success: true, message: 'Email already registered' };
       }
       return { success: false, error: error.message };
     }
+
+    // Set cookie on success
+    const cookieStore = await cookies();
+    cookieStore.set('quint_early_access', 'true', { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production', 
+      sameSite: 'lax', 
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365 // 1 year
+    });
 
     return { success: true };
   } catch (err) {

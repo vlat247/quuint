@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { BuiltForScroller } from "@/components/BuiltForScroller";
 import { submitEmail } from "./actions";
-import { X } from "lucide-react";
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [activeTab, setActiveTab] = useState<"summary" | "topics" | "search">("summary");
@@ -31,7 +31,7 @@ export default function Home() {
       setLoading(false);
       
       if (result.success) {
-        setSubmitted(true);
+        router.push("/demo");
       } else {
         alert(result.error || "Something went wrong. Please try again.");
       }
@@ -441,45 +441,9 @@ export default function Home() {
             <h2 className="text-4xl font-semibold text-zinc-900">Get early access</h2>
             <p className="mt-4 text-xl text-zinc-500">Limited spots available.</p>
             
-            {submitted ? (
-              <div className="relative mt-8 w-full scale-100 rounded-2xl border border-zinc-200 bg-white p-10 shadow-xl animate-in zoom-in-95 duration-300">
-                {/* Close Cross Button */}
-                <button 
-                  onClick={() => setSubmitted(false)}
-                  className="absolute right-4 top-4 cursor-pointer rounded-full p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-                  aria-label="Close message"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-
-                <div className="text-center">
-                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-3xl">
-                    ✨
-                  </div>
-                  <h3 className="mb-4 text-3xl font-semibold text-zinc-900">Waitlist Joined!</h3>
-                  <p className="text-xl leading-relaxed text-zinc-600">
-                    Thank you for interesting in our product! We will let you know soon when it is releases!
-                  </p>
-                  <div className="mt-8 grid gap-3">
-                    <a
-                      href={`/demo?email=${encodeURIComponent(email)}`}
-                      className="flex w-full items-center justify-center rounded-lg bg-zinc-900 px-8 py-4 text-lg font-medium text-white transition-all hover:bg-zinc-800"
-                    >
-                      Try the demo
-                    </a>
-                    <button
-                      onClick={() => setSubmitted(false)}
-                      className="w-full cursor-pointer rounded-lg bg-transparent px-8 py-2 text-base font-medium text-zinc-500 transition-all hover:text-zinc-900"
-                    >
-                      Close and add another email
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
               <form onSubmit={handleSubmit} className="mt-8">
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@email.com"
@@ -494,7 +458,6 @@ export default function Home() {
                   {loading ? "Joining..." : "Join the waitlist"}
                 </button>
               </form>
-            )}
           </div>
         </section>
 
