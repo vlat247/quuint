@@ -81,3 +81,41 @@ export async function analyzeChannelApi(email: string, channel: string) {
 
   return apiPost<AnalyzePayload, AnalyzeResponse>('/analyze', payload);
 }
+
+// Early Access API
+export async function earlyAccessApi(email: string) {
+  interface EarlyAccessPayload {
+    email: string;
+  }
+  interface EarlyAccessResponse {
+    message: string;
+  }
+  return apiPost<EarlyAccessPayload, EarlyAccessResponse>('/early-access', { email });
+}
+
+// Create Folder API
+export async function createFolderApi(name: string, channels: string[]) {
+  interface CreateFolderPayload {
+    name: string;
+    channels: string[];
+  }
+  interface CreateFolderResponse {
+    folder_id: string;
+  }
+  return apiPost<CreateFolderPayload, CreateFolderResponse>('/folders', { name, channels });
+}
+
+// Generate Digest API
+export async function generateDigestApi(folderId: string) {
+  interface GenerateDigestPayload {
+    folder_id: string; // UUID
+  }
+  // The structure of the response based on the users description
+  interface GenerateDigestResponse {
+    title: string;
+    summary: string;
+    insights: string[];
+    cached?: boolean;
+  }
+  return apiPost<GenerateDigestPayload, GenerateDigestResponse>('/digest', { folder_id: folderId });
+}

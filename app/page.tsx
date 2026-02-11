@@ -11,6 +11,7 @@ export default function Home() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [activeTab, setActiveTab] = useState<"summary" | "topics" | "search">("summary");
 
@@ -27,13 +28,15 @@ export default function Home() {
     e.preventDefault();
     if (email && !loading) {
       setLoading(true);
+      setError("");
       const result = await submitEmail(email);
       setLoading(false);
       
       if (result.success) {
-        router.push("/demo");
+        // Pass email to demo page if needed, or just redirect
+        router.push(`/demo?email=${encodeURIComponent(email)}`);
       } else {
-        alert(result.error || "Something went wrong. Please try again.");
+        setError(result.error || "Something went wrong. Please try again.");
       }
     }
   };
@@ -445,11 +448,19 @@ export default function Home() {
                 <input
                   type="text"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError(""); // Clear error on type
+                  }}
                   placeholder="you@email.com"
                   required
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-5 py-4 text-xl text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none"
+                  className={`w-full rounded-lg border ${error ? "border-red-500 bg-red-50 text-red-900" : "border-zinc-300 bg-white text-zinc-900"} px-5 py-4 text-xl placeholder-zinc-400 focus:outline-none focus:ring-1 ${error ? "focus:border-red-500 focus:ring-red-500" : "focus:border-zinc-900 focus:ring-zinc-900"}`}
                 />
+                 {error && (
+                  <p className="mt-2 text-sm text-red-600 font-medium text-left px-1">
+                    {error}
+                  </p>
+                )}
                 <button
                   type="submit"
                   disabled={loading}

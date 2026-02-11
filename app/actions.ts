@@ -4,44 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export async function submitEmail(email: string) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    console.error('Missing Supabase environment variables');
-    return { success: false, error: 'Server configuration error' };
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
   try {
-    // Basic validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-      return { success: false, error: 'Invalid email address' };
-    }
-
-    const { error } = await supabase
-      .from('early_access_emails')
-      .insert([{ email }]);
-
-    if (error) {
-      // Handle unique constraint violation (PGRST116 or 23505)
-      if (error.code === '23505') {
-        // Even if already registered, set the cookie so they can access the demo
-        const cookieStore = await cookies();
-        cookieStore.set('quint_early_access', 'true', { 
-          httpOnly: true, 
-          secure: process.env.NODE_ENV === 'production', 
-          sameSite: 'lax', 
-          path: '/',
-          maxAge: 60 * 60 * 24 * 365 // 1 year
-        });
-        return { success: true, message: 'Email already registered' };
-      }
-      return { success: false, error: error.message };
-    }
-
-    // Set cookie on success
+    const { earlyAccessApi, ApiError } = await import('@/lib/api');
+    await earlyAccessApi(email);
+    
+    // Set cookie on success (even if backend handles it, we set it here for middleware/client checks if needed)
     const cookieStore = await cookies();
     cookieStore.set('quint_early_access', 'true', { 
       httpOnly: true, 
@@ -52,9 +19,43 @@ export async function submitEmail(email: string) {
     });
 
     return { success: true };
-  } catch (err) {
-    console.error('Submission error:', err);
+  } catch (error) {
+     if (error instanceof Error && error.name === 'ApiError') {
+      const apiError = error as unknown as { status: number; body: string };
+      // Try to parse the error body if it's JSON
+      let errorMessage = 'Invalid email';
+      try {
+        const parsed = JSON.parse(apiError.body);
+        if (parsed.detail) errorMessage = parsed.detail;
+      } catch {
+         // fallback
+      }
+      return { success: false, error: errorMessage };
+    }
+    console.error('Submission error:', error);
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+export async function createFolder(name: string, channels: string[]) {
+   try {
+    const { createFolderApi } = await import('@/lib/api');
+    const data = await createFolderApi(name, channels);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Create folder error:', error);
+    return { success: false, error: 'Failed to create folder' };
+  }
+}
+
+export async function generateDigest(folderId: string) {
+  try {
+    const { generateDigestApi } = await import('@/lib/api');
+    const data = await generateDigestApi(folderId);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Generate digest error:', error);
+    return { success: false, error: 'Failed to generate digest' };
   }
 }
 
