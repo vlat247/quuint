@@ -194,6 +194,7 @@ function DemoPageContent() {
              <DashboardHeader 
                 folderName={selectedFolder?.name} 
                 isSidebarCollapsed={isSidebarCollapsed}
+                onHomeClick={() => setSelectedFolderId(null)}
              />
            </div>
 

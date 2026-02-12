@@ -5,19 +5,23 @@ import { ChevronRight, Home, Bell, Search } from "lucide-react";
 interface DashboardHeaderProps {
   folderName?: string;
   isSidebarCollapsed?: boolean;
+  onHomeClick?: () => void;
 }
 
-export function DashboardHeader({ folderName, isSidebarCollapsed }: DashboardHeaderProps) {
+export function DashboardHeader({ folderName, isSidebarCollapsed, onHomeClick }: DashboardHeaderProps) {
   return (
     <header 
       className={`sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md transition-all duration-300 mx-auto`}
     >
       {/* Left: Breadcrumbs */}
       <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
-        <div className="flex items-center gap-2 hover:text-zinc-900 transition-colors cursor-pointer">
+        <button 
+          onClick={onHomeClick}
+          className="flex items-center gap-2 hover:text-zinc-900 transition-colors cursor-pointer"
+        >
           <Home className="h-4 w-4" />
           <span>Home</span>
-        </div>
+        </button>
         
         {folderName && (
           <>
