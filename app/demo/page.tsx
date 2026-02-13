@@ -6,6 +6,7 @@ import { analyzeChannel, createFolder, generateDigest } from "@/app/actions";
 import { DashboardHeader } from "@/components/demo/DashboardHeader";
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { Sidebar } from "@/components/demo/Sidebar";
+import { AccountModal } from "@/components/demo/AccountModal";
 import { ICON_MAP } from "@/components/demo/icons";
 
 function DemoPageContent() {
@@ -15,6 +16,7 @@ function DemoPageContent() {
   // -- Global State --
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   // -- Sidebar State --
   const [folders, setFolders] = useState<Array<{ id: string; name: string; channels: string[]; icon?: string }>>([
@@ -149,10 +151,13 @@ function DemoPageContent() {
         onCreateFolder={(name, channels, icon) => handleCreateFolder(name, channels, icon)}
         isCollapsed={isSidebarCollapsed}
         toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        onOpenAccountSettings={() => setIsAccountModalOpen(true)}
       />
 
       <main className="flex-1 relative flex flex-col h-full overflow-hidden transition-all duration-300">
         {/* Background Elements */}
+        
+        {/* ... (background code omitted for brevity in replace, but kept in file) ... */}
         <div className="absolute inset-0 z-0 pointer-events-none">
              <AuroraBackground />
               <div 
@@ -195,6 +200,7 @@ function DemoPageContent() {
                 folderName={selectedFolder?.name} 
                 isSidebarCollapsed={isSidebarCollapsed}
                 onHomeClick={() => setSelectedFolderId(null)}
+                onProfileClick={() => setIsAccountModalOpen(true)}
              />
            </div>
 
@@ -421,6 +427,12 @@ function DemoPageContent() {
            </div>
         </div>
       </main>
+
+      <AccountModal 
+        isOpen={isAccountModalOpen} 
+        onClose={() => setIsAccountModalOpen(false)} 
+        email={emailParam || undefined}
+      />
     </div>
   );
 }

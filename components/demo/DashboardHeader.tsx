@@ -6,9 +6,10 @@ interface DashboardHeaderProps {
   folderName?: string;
   isSidebarCollapsed?: boolean;
   onHomeClick?: () => void;
+  onProfileClick?: () => void;
 }
 
-export function DashboardHeader({ folderName, isSidebarCollapsed, onHomeClick }: DashboardHeaderProps) {
+export function DashboardHeader({ folderName, isSidebarCollapsed, onHomeClick, onProfileClick }: DashboardHeaderProps) {
   return (
     <header 
       className={`sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md transition-all duration-300 mx-auto`}
@@ -46,7 +47,10 @@ export function DashboardHeader({ folderName, isSidebarCollapsed, onHomeClick }:
          <button className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors">
             <Bell className="h-5 w-5" />
          </button>
-         <button className="ml-2 h-8 w-8 rounded-full bg-gradient-to-tr from-zinc-900 to-zinc-700 shadow-md ring-2 ring-white" />
+         <button 
+            onClick={onProfileClick}
+            className="ml-2 h-8 w-8 rounded-full bg-gradient-to-tr from-zinc-900 to-zinc-700 shadow-md ring-2 ring-white hover:ring-zinc-200 transition-all" 
+         />
       </div>
     </header>
   );
