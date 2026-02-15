@@ -53,17 +53,9 @@ function AuthPageContent() {
         return;
       }
 
-      // If no session but user exists, email confirmation may be required
-      // For MVP: redirect to demo anyway since we don't gate access
-      if (data.user) {
-        window.location.href = "/demo";
-        return;
-      }
-
-      // Fallback: show success message
-      setSuccessMessage("Account created! Redirecting...");
+      // No session — email confirmation is required
+      setSuccessMessage("Check your email to confirm your account, then log in.");
       setLoading(false);
-      window.location.href = "/demo";
     } else {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
