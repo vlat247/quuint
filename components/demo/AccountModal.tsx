@@ -1,17 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, User, Mail, CreditCard, LogOut, Shield, Zap } from "lucide-react";
 
 interface AccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   email?: string;
+  nickname?: string;
 }
 
-export function AccountModal({ isOpen, onClose, email = "demo@quint.com" }: AccountModalProps) {
-  const [name, setName] = useState("Demo User");
+export function AccountModal({ isOpen, onClose, email = "demo@quint.com", nickname }: AccountModalProps) {
+  const [name, setName] = useState(nickname || "User");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (nickname) setName(nickname);
+  }, [nickname]);
 
   if (!isOpen) return null;
 

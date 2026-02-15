@@ -8,6 +8,7 @@ import { AuroraBackground } from "@/components/AuroraBackground";
 import { Sidebar } from "@/components/demo/Sidebar";
 import { AccountModal } from "@/components/demo/AccountModal";
 import { ICON_MAP } from "@/components/demo/icons";
+import { supabase } from "@/lib/supabase/client";
 
 function DemoPageContent() {
   const searchParams = useSearchParams();
@@ -17,6 +18,8 @@ function DemoPageContent() {
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [userNickname, setUserNickname] = useState<string | undefined>();
+  const [userEmail, setUserEmail] = useState<string | undefined>();
 
   // -- Sidebar State --
   const [folders, setFolders] = useState<Array<{ id: string; name: string; channels: string[]; icon?: string }>>([
@@ -44,6 +47,18 @@ function DemoPageContent() {
     
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  // Fetch Supabase user on mount
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email);
+        setUserNickname(user.user_metadata?.display_name);
+      }
+    }
+    fetchUser();
   }, []);
 
   // -- Handlers --
@@ -431,7 +446,8 @@ function DemoPageContent() {
       <AccountModal 
         isOpen={isAccountModalOpen} 
         onClose={() => setIsAccountModalOpen(false)} 
-        email={emailParam || undefined}
+        email={userEmail || emailParam || undefined}
+        nickname={userNickname}
       />
     </div>
   );

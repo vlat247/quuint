@@ -10,6 +10,7 @@ function AuthPageContent() {
   const initialMode = searchParams.get("mode") === "login" ? "login" : "signup";
 
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
+  const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,9 @@ function AuthPageContent() {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: { display_name: nickname },
+        },
       });
 
       if (signUpError) {
@@ -137,6 +141,29 @@ function AuthPageContent() {
 
         {/* Auth form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === "signup" && (
+            <div>
+              <label
+                htmlFor="nickname"
+                className="block text-sm font-medium text-zinc-700 mb-1.5"
+              >
+                Nickname
+              </label>
+              <input
+                id="nickname"
+                type="text"
+                value={nickname}
+                onChange={(e) => {
+                  setNickname(e.target.value);
+                  setError("");
+                }}
+                placeholder="Your nickname"
+                required
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-lg text-zinc-900 placeholder-zinc-400 transition-all focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              />
+            </div>
+          )}
+
           <div>
             <label
               htmlFor="email"
