@@ -167,6 +167,7 @@ function DemoPageContent() {
         isCollapsed={isSidebarCollapsed}
         toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         onOpenAccountSettings={() => setIsAccountModalOpen(true)}
+        userName={userNickname}
       />
 
       <main className="flex-1 relative flex flex-col h-full overflow-hidden transition-all duration-300">

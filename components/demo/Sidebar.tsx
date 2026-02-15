@@ -22,6 +22,7 @@ interface SidebarProps {
   isCollapsed: boolean;
   toggleSidebar: () => void;
   onOpenAccountSettings?: () => void;
+  userName?: string;
 }
 
 export function Sidebar({ 
@@ -31,7 +32,8 @@ export function Sidebar({
   onCreateFolder,
   isCollapsed,
   toggleSidebar,
-  onOpenAccountSettings
+  onOpenAccountSettings,
+  userName
 }: SidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -109,11 +111,11 @@ export function Sidebar({
           className={`flex items-center gap-3 w-full rounded-lg hover:bg-zinc-200/50 transition-colors text-left ${isCollapsed ? "justify-center p-2" : "px-2 py-2"}`}
         >
             <div className="h-8 w-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 text-xs font-bold shrink-0">
-                US
+                {userName ? userName.slice(0, 2).toUpperCase() : "US"}
             </div>
             {!isCollapsed && (
                 <div className="text-sm overflow-hidden animate-in fade-in duration-200">
-                    <p className="font-medium text-zinc-900 truncate">User</p>
+                    <p className="font-medium text-zinc-900 truncate">{userName || "User"}</p>
                     <p className="text-xs text-zinc-500 truncate">Free Plan</p>
                 </div>
             )}

@@ -49,21 +49,21 @@ function AuthPageContent() {
 
       // If session exists, user is immediately signed in (email confirmation disabled)
       if (data.session) {
-        router.push("/demo");
+        window.location.href = "/demo";
         return;
       }
 
       // If no session but user exists, email confirmation may be required
       // For MVP: redirect to demo anyway since we don't gate access
       if (data.user) {
-        router.push("/demo");
+        window.location.href = "/demo";
         return;
       }
 
       // Fallback: show success message
       setSuccessMessage("Account created! Redirecting...");
       setLoading(false);
-      router.push("/demo");
+      window.location.href = "/demo";
     } else {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -76,7 +76,7 @@ function AuthPageContent() {
         return;
       }
 
-      router.push("/demo");
+      window.location.href = "/demo";
     }
   };
 
