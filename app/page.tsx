@@ -1,17 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { BuiltForScroller } from "@/components/BuiltForScroller";
-import { submitEmail } from "./actions";
 
 export default function Home() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [activeTab, setActiveTab] = useState<"summary" | "topics" | "search">("summary");
 
@@ -24,25 +19,8 @@ export default function Home() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email && !loading) {
-      setLoading(true);
-      setError("");
-      const result = await submitEmail(email);
-      setLoading(false);
-      
-      if (result.success) {
-        // Pass email to demo page if needed, or just redirect
-        router.push(`/demo?email=${encodeURIComponent(email)}`);
-      } else {
-        setError(result.error || "Something went wrong. Please try again.");
-      }
-    }
-  };
-
-  const scrollToEarlyAccess = () => {
-    const element = document.getElementById("early-access");
+  const scrollToGetStarted = () => {
+    const element = document.getElementById("get-started");
     element?.scrollIntoView({ behavior: "auto" });
   };
 
@@ -124,11 +102,11 @@ export default function Home() {
               </p>
               
               <button
-                onClick={scrollToEarlyAccess}
+                onClick={scrollToGetStarted}
                 className="group relative mt-10 w-fit cursor-pointer overflow-hidden rounded-full bg-zinc-900 px-10 py-5 text-xl font-medium text-white shadow-xl transition-all hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent z-10" />
-                <span className="relative z-20">Get early access</span>
+                <span className="relative z-20">Try our product</span>
               </button>
 
               {/* Stats removed */}
@@ -438,37 +416,26 @@ export default function Home() {
         {/* Use Cases Section - Scrolling */}
         <BuiltForScroller />
 
-        {/* Early Access Section */}
-        <section id="early-access" className="px-6 py-24">
+        {/* Get Started Section */}
+        <section id="get-started" className="px-6 py-24">
           <div className="relative mx-auto max-w-md text-center">
-            <h2 className="text-4xl font-semibold text-zinc-900">Get early access</h2>
-            <p className="mt-4 text-xl text-zinc-500">Limited spots available.</p>
+            <h2 className="text-4xl font-semibold text-zinc-900">Start using Quint</h2>
+            <p className="mt-4 text-xl text-zinc-500">Create an account to get started.</p>
             
-              <form onSubmit={handleSubmit} className="mt-8">
-                <input
-                  type="text"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setError(""); // Clear error on type
-                  }}
-                  placeholder="you@email.com"
-                  required
-                  className={`w-full rounded-lg border ${error ? "border-red-500 bg-red-50 text-red-900" : "border-zinc-300 bg-white text-zinc-900"} px-5 py-4 text-xl placeholder-zinc-400 focus:outline-none focus:ring-1 ${error ? "focus:border-red-500 focus:ring-red-500" : "focus:border-zinc-900 focus:ring-zinc-900"}`}
-                />
-                 {error && (
-                  <p className="mt-2 text-sm text-red-600 font-medium text-left px-1">
-                    {error}
-                  </p>
-                )}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mt-4 w-full cursor-pointer rounded-lg bg-zinc-900 px-10 py-5 text-xl font-medium text-white transition-all hover:bg-zinc-800 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? "Joining..." : "Join the waitlist"}
-                </button>
-              </form>
+            <div className="mt-8 flex flex-col gap-3">
+              <Link
+                href="/auth?mode=signup"
+                className="w-full rounded-lg bg-zinc-900 px-10 py-5 text-xl font-medium text-white transition-all hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] text-center"
+              >
+                Create account
+              </Link>
+              <Link
+                href="/auth?mode=login"
+                className="w-full rounded-lg border border-zinc-300 bg-white px-10 py-5 text-xl font-medium text-zinc-900 transition-all hover:bg-zinc-50 hover:scale-[1.02] active:scale-[0.98] text-center"
+              >
+                Log in
+              </Link>
+            </div>
           </div>
         </section>
 
