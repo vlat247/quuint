@@ -24,7 +24,7 @@ function DemoPageContent() {
   // -- Sidebar State --
   const [folders, setFolders] = useState<Array<{ id: string; name: string; channels: string[]; icon?: string }>>([
     { id: "demo-1", name: "Tech News", channels: ["@verge", "@techcrunch"], icon: "Rocket" },
-    { id: "demo-2", name: "Crypto", channels: ["@coindesk", "@cointelegraph"], icon: "Bitcoin" },
+    { id: "demo-2", name: "News", channels: ["@durov", "@telegram"], icon: "Newspaper" },
   ]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 

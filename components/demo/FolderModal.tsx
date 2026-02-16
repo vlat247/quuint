@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Plus, Trash2 } from "lucide-react";
 import { ICON_MAP } from "./icons";
 
 interface CreateFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string, channels: string, icon: string) => void;
+  onCreate: (name: string, channels: string[], icon: string) => void;
 }
 
 export function FolderModal({ isOpen, onClose, onCreate }: CreateFolderModalProps) {
   const [name, setName] = useState("");
-  const [channels, setChannels] = useState("");
+  const [channels, setChannels] = useState<string[]>([""]);
   const [selectedIconName, setSelectedIconName] = useState("Folder");
   const [error, setError] = useState("");
 
@@ -24,16 +24,30 @@ export function FolderModal({ isOpen, onClose, onCreate }: CreateFolderModalProp
       setError("Folder name is required");
       return;
     }
-    if (!channels.trim()) {
+    const validChannels = channels.map(c => c.trim()).filter(Boolean);
+    if (validChannels.length === 0) {
       setError("At least one channel is required");
       return;
     }
-    onCreate(name, channels, selectedIconName);
-    // Reset
+    onCreate(name, validChannels, selectedIconName);
     setName("");
-    setChannels("");
+    setChannels([""]);
     setSelectedIconName("Folder");
     setError("");
+  };
+
+  const updateChannel = (index: number, value: string) => {
+    setChannels(prev => prev.map((ch, i) => i === index ? value : ch));
+    setError("");
+  };
+
+  const addChannel = () => {
+    setChannels(prev => [...prev, ""]);
+  };
+
+  const removeChannel = (index: number) => {
+    if (channels.length <= 1) return;
+    setChannels(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -75,20 +89,43 @@ export function FolderModal({ isOpen, onClose, onCreate }: CreateFolderModalProp
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Crypto News"
+                placeholder="e.g. News"
                 className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-all font-medium"
              />
           </div>
 
           <div>
-             <label className="block text-sm font-medium text-zinc-700 mb-1">Channels (comma separated)</label>
-             <input
-                type="text"
-                value={channels}
-                onChange={(e) => setChannels(e.target.value)}
-                placeholder="@coindesk, @cointelegraph"
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-all"
-             />
+             <label className="block text-sm font-medium text-zinc-700 mb-1">Channels</label>
+             <div className="space-y-2">
+               {channels.map((ch, i) => (
+                 <div key={i} className="flex items-center gap-2">
+                   <input
+                     type="text"
+                     value={ch}
+                     onChange={(e) => updateChannel(i, e.target.value)}
+                     placeholder="@channel_name"
+                     className="flex-1 rounded-lg border border-zinc-200 px-3 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-all"
+                   />
+                   {channels.length > 1 && (
+                     <button
+                       type="button"
+                       onClick={() => removeChannel(i)}
+                       className="p-2 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                     >
+                       <Trash2 className="h-4 w-4" />
+                     </button>
+                   )}
+                 </div>
+               ))}
+               <button
+                 type="button"
+                 onClick={addChannel}
+                 className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors px-1 py-1"
+               >
+                 <Plus className="h-4 w-4" />
+                 Add channel
+               </button>
+             </div>
           </div>
 
           {error && <p className="text-sm text-red-600 font-medium animate-in fade-in">{error}</p>}

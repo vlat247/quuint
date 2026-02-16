@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, User, Mail, CreditCard, LogOut, Shield, Zap } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -103,7 +104,11 @@ export function AccountModal({ isOpen, onClose, email = "demo@quint.com", nickna
           <div className="flex gap-3 pt-4 border-t border-zinc-100 mt-2">
             <button
               type="button"
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.href = "/";
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
               Sign Out

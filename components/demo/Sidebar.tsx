@@ -125,8 +125,8 @@ export function Sidebar({
       <FolderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onCreate={(name: string, channels: string, icon: string) => {
-          onCreateFolder(name, channels.split(","), icon);
+        onCreate={(name: string, channels: string[], icon: string) => {
+          onCreateFolder(name, channels, icon);
           setIsModalOpen(false);
         }}
       />
