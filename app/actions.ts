@@ -1,7 +1,7 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import { createFolderWithChannels, saveChannelAnalysis } from '@/lib/supabase/db';
 
 export async function submitEmail(email: string) {
   try {
@@ -9,6 +9,7 @@ export async function submitEmail(email: string) {
     await earlyAccessApi(email);
     
     // Set cookie on success (even if backend handles it, we set it here for middleware/client checks if needed)
+    const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
     cookieStore.set('quint_early_access', 'true', { 
       httpOnly: true, 
@@ -37,11 +38,24 @@ export async function submitEmail(email: string) {
   }
 }
 
-export async function createFolder(name: string, channels: string[]) {
+export async function createFolder(name: string, channels: string[], icon: string) {
    try {
-    const { createFolderApi } = await import('@/lib/api');
-    const data = await createFolderApi(name, channels);
-    return { success: true, data };
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+        return { success: false, error: 'Unauthorized' };
+    }
+
+    const folder = await createFolderWithChannels(
+        supabase, 
+        user.id, 
+        name, 
+        icon || 'Folder', 
+        channels
+    );
+    
+    return { success: true, data: folder };
   } catch (error) {
     console.error('Create folder error:', error);
     return { success: false, error: 'Failed to create folder' };
@@ -50,6 +64,11 @@ export async function createFolder(name: string, channels: string[]) {
 
 export async function generateDigest(folderId: string) {
   try {
+    // Note: The external API might expect the folder to exist in its own DB.
+    // For now, we are just calling it as before, but since we are migrating to Supabase,
+    // this might fail if the external API is stateful and doesn't know about our Supabase IDs.
+    // TODO: Update external API to accept channel list or sync folders.
+    
     const { generateDigestApi } = await import('@/lib/api');
     const data = await generateDigestApi(folderId);
     return { success: true, data };
@@ -61,18 +80,26 @@ export async function generateDigest(folderId: string) {
 
 export async function analyzeChannel(email: string, channel: string) {
   try {
-    // Import the API helper dynamically (server action context)
+    // 1. Call External API for Analysis
     const { analyzeChannelApi, ApiError } = await import('@/lib/api');
+    // Using a default email if not provided to avoid API errors if email is required
+    const data = await analyzeChannelApi(email || 'demo@quint.com', channel);
 
-    const data = await analyzeChannelApi(email, channel);
+    // 2. Persist Result to Supabase (Best Effort)
+    try {
+        const supabase = await createClient();
+        await saveChannelAnalysis(supabase, channel, data);
+    } catch (dbError) {
+        console.warn('Failed to save analysis to DB:', dbError);
+        // Continue, don't fail the request just because save failed
+    }
+
     return { success: true, data };
   } catch (error) {
-    // Handle API errors with detailed logging
     if (error instanceof Error && error.name === 'ApiError') {
       const apiError = error as unknown as { status: number; statusText: string; body: string };
       console.error('[analyzeChannel] API Error:', apiError.status, apiError.body);
       
-      // User-friendly error message based on status
       let userMessage = 'Analysis failed. Please try again.';
       if (apiError.status === 429) {
         userMessage = 'Too many requests. Please wait a moment and try again.';
@@ -84,7 +111,6 @@ export async function analyzeChannel(email: string, channel: string) {
       return { success: false, error: userMessage };
     }
 
-    // Network or other errors
     console.error('[analyzeChannel] Unexpected error:', error);
     return { success: false, error: 'Failed to connect to analysis service. Check your network connection.' };
   }

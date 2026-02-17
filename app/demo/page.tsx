@@ -63,6 +63,24 @@ function DemoPageContent() {
 
   // -- Handlers --
 
+  // Fetch folders on mount
+  useEffect(() => {
+    async function fetchFolders() {
+      try {
+        const res = await fetch('/api/folders');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.folders && data.folders.length > 0) {
+            setFolders(data.folders);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch folders:', error);
+      }
+    }
+    fetchFolders();
+  }, []);
+
   const handleCreateFolder = async (name: string, channelsList: string[], icon: string) => {
      // Optimistic update
      const tempId = crypto.randomUUID();
@@ -70,13 +88,15 @@ function DemoPageContent() {
      setFolders(prev => [newFolder, ...prev]);
      
      // API Call
-     const result = await createFolder(name, channelsList);
+     const result = await createFolder(name, channelsList, icon);
      if (result.success) {
-         setFolders(prev => prev.map(f => f.id === tempId ? { ...f, id: result.data?.folder_id || tempId } : f));
+         setFolders(prev => prev.map(f => f.id === tempId ? { ...f, ...result.data, id: result.data.id } : f));
      } else {
-         alert("Failed to create folder on server (using local mock for now)");
+         alert("Failed to create folder on server");
+         // Rollback
+         setFolders(prev => prev.filter(f => f.id !== tempId));
      }
-     setSelectedFolderId(tempId); // Auto-select
+     setSelectedFolderId(result.success ? result.data.id : null); 
   };
 
   const handleSelectFolder = (id: string) => {
