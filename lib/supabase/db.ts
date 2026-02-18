@@ -1,10 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // ── Real DB schema ──────────────────────────────────────────
-// folders:        id, user_id (→ public.users.id), name, icon, email, created_at
+// folders:         id, user_id (→ auth.users.id), name, icon, email, created_at
 // folder_channels: id, folder_id (→ folders.id), channel, created_at
-// summaries:      id, user_id (→ public.users.id), channel, summary (jsonb), email, created_at
-// users:          id, email, role, username, auth_id (= auth.users.id), created_at
+// summaries:       id, user_id (→ public.users.id), channel, summary (jsonb), email, created_at
+// users (public):  id, email, role, username, auth_id (= auth.users.id), created_at
 // ────────────────────────────────────────────────────────────
 
 export interface Folder {
@@ -16,52 +16,11 @@ export interface Folder {
   channels?: string[];
 }
 
-export interface FolderChannel {
-  id: string;
-  folder_id: string;
-  channel: string;
-  created_at: string;
-}
-
-/** Resolve public.users.id from auth UUID, auto-creating the row if needed */
-async function getPublicUserId(
-  supabase: SupabaseClient,
-  authId: string,
-  email?: string
-): Promise<string | null> {
-  // Use maybeSingle() — returns null (not error) when no row found
-  const { data: existing } = await supabase
-    .from('users')
-    .select('id')
-    .eq('auth_id', authId)
-    .maybeSingle();
-
-  if (existing) return existing.id;
-
-  // Auto-create the public.users row for this Supabase Auth user
-  // Use upsert to handle race conditions
-  const { data: created, error } = await supabase
-    .from('users')
-    .upsert({ auth_id: authId, email: email ?? '' }, { onConflict: 'auth_id' })
-    .select('id')
-    .single();
-
-  if (error || !created) {
-    console.error('Could not create public user for auth_id:', authId, JSON.stringify(error));
-    return null;
-  }
-  return created.id;
-}
-
 export async function getUserFolders(supabase: SupabaseClient, authId: string) {
-  // First resolve the public user id
-  const publicUserId = await getPublicUserId(supabase, authId);
-  if (!publicUserId) return [];
-
   const { data: folders, error } = await supabase
     .from('folders')
     .select('*')
-    .eq('user_id', publicUserId)
+    .eq('user_id', authId)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -69,7 +28,9 @@ export async function getUserFolders(supabase: SupabaseClient, authId: string) {
     return [];
   }
 
-  // Fetch channels for each folder
+  if (!folders || folders.length === 0) return [];
+
+  // Fetch channels for each folder from folder_channels table
   const folderIds = folders.map((f: any) => f.id);
   const { data: folderChannels } = await supabase
     .from('folder_channels')
@@ -86,26 +47,22 @@ export async function getUserFolders(supabase: SupabaseClient, authId: string) {
 
 export async function createFolderWithChannels(
   supabase: SupabaseClient,
-  authId: string,
+  authId: string,   // auth.users.id — used directly as folders.user_id
   name: string,
   icon: string,
   channels: string[],
-  email?: string
+  _email?: string   // kept for API compatibility, not used
 ) {
-  // Resolve public user id from auth UUID (auto-creates if missing)
-  const publicUserId = await getPublicUserId(supabase, authId, email);
-  if (!publicUserId) throw new Error('User not found in public.users. Please contact support.');
-
-  // 1. Create folder
+  // Insert folder — user_id is the Supabase auth UUID (FK → auth.users.id)
   const { data: folder, error: folderError } = await supabase
     .from('folders')
-    .insert({ user_id: publicUserId, name, icon })
+    .insert({ user_id: authId, name, icon })
     .select()
     .single();
 
   if (folderError) throw folderError;
 
-  // 2. Create channels in folder_channels
+  // Insert channels into folder_channels
   if (channels.length > 0) {
     const channelInserts = channels.map((channel) => ({
       folder_id: folder.id,
@@ -129,16 +86,23 @@ export async function saveChannelAnalysis(
   authId?: string,
   email?: string
 ) {
+  // summaries.user_id references public.users.id — look it up if we have authId
   const insertData: any = {
     channel: channelName,
     summary: summaryData,
   };
 
-  if (authId) {
-    const publicUserId = await getPublicUserId(supabase, authId);
-    if (publicUserId) insertData.user_id = publicUserId;
-  }
   if (email) insertData.email = email;
+
+  if (authId) {
+    const { data: publicUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', authId)
+      .maybeSingle();
+
+    if (publicUser) insertData.user_id = publicUser.id;
+  }
 
   const { error } = await supabase.from('summaries').insert(insertData);
   if (error) console.error('Error saving analysis:', error);
@@ -151,7 +115,7 @@ export async function getChannelAnalysis(supabase: SupabaseClient, channelName: 
     .eq('channel', channelName)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error) return null;
   return data;
