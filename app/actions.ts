@@ -1,11 +1,9 @@
 'use server'
 
-import Groq from 'groq-sdk';
 import { createClient } from '@/lib/supabase/server';
 import { createFolderWithChannels, saveChannelAnalysis } from '@/lib/supabase/db';
 
 const BACKEND_URL = 'https://quint-backend-xq3u.onrender.com';
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function submitEmail(email: string) {
   try {
@@ -101,11 +99,9 @@ export async function generateDigest(folderId: string) {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
 
-    // Fetch summaries for each channel — try backend cache first, fall back to Groq
-
+    // Fetch summaries for each channel from backend
     const summaries = await Promise.all(
       channels.map(async (c: { channel: string }) => {
-        // Try backend cache first
         if (token) {
           try {
             const res = await fetch(`${BACKEND_URL}/analyze`, {
@@ -121,69 +117,39 @@ export async function generateDigest(folderId: string) {
               const summary = data.result?.summary || data.summary;
               if (summary) return `Channel: ${c.channel}\n${summary}`;
             }
-          } catch {
-            // fall through to Groq
+          } catch (e) {
+            console.error(`Backend fetch failed for ${c.channel}:`, e);
           }
         }
-
-        // Fall back to Groq directly
-        try {
-          const completion = await groq.chat.completions.create({
-            messages: [
-              {
-                role: 'system',
-                content: 'You are an expert analyst. In 2-3 sentences, summarize what this Telegram channel likely covers based on its name. Be specific and informative.',
-              },
-              {
-                role: 'user',
-                content: `Summarize the Telegram channel: ${c.channel}`,
-              },
-            ],
-            model: 'llama-3.3-70b-versatile',
-          });
-          const summary = completion.choices[0]?.message?.content || '';
-          return `Channel: ${c.channel}\n${summary}`;
-        } catch {
-          return `Channel: ${c.channel}\n- Could not fetch data.`;
-        }
+        return `Channel: ${c.channel}\n- No data available (Backend failed)`;
       })
     );
 
     const folderContent = summaries.join('\n\n');
 
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    // REMOVED GROQ FALLBACK - Relying on backend only
+    // The main digest generation should also come from the backend or be handled differently
+    // For now, if we don't have a backend digest, we throw an error.
+    if (!token) {
+      throw new Error('Not authenticated. Please sign in to generate a digest.');
+    }
 
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert analyst. Create a digest for these Telegram channels.
-You MUST respond with ONLY a valid JSON object. No markdown, no explanation, no code blocks.
-The JSON must have exactly these fields:
-- "title": a string with a catchy headline
-- "summary": a string with a 2-3 sentence executive summary  
-- "insights": a JSON array of 3-5 strings, each a key insight
-- "cached": the boolean false
-
-Example of correct output:
-{"title":"Weekly Tech Digest","summary":"This week saw major advances in AI and crypto markets.","insights":["AI models are getting faster","Bitcoin hit new highs","Telegram added new features"],"cached":false}`,
-        },
-        {
-          role: 'user',
-          content: folderContent,
-        },
-      ],
-      model: 'llama-3.3-70b-versatile',
+    const digestRes = await fetch(`${BACKEND_URL}/digest`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ folder_id: folderId, folder_content: folderContent }),
     });
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error('No content from Groq');
+    if (!digestRes.ok) {
+      const errorBody = await digestRes.text();
+      throw new Error(`Backend digest generation failed: ${digestRes.status} - ${errorBody}`);
+    }
 
-    // Extract JSON from response (handle cases where model wraps in markdown)
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON found in Groq response');
-
-    const data = JSON.parse(jsonMatch[0]);
+    const backendData = await digestRes.json();
+    const data = backendData.result || backendData;
 
     // Defensively handle insights — model sometimes returns it as a string
     let insights: string[] = [];
@@ -205,7 +171,7 @@ Example of correct output:
         title: data.title || 'Digest',
         summary: data.summary || '',
         insights,
-        cached: false,
+        cached: data.cached ?? false, // Assume backend indicates caching
       },
     };
   } catch (error: any) {
@@ -247,50 +213,16 @@ export async function analyzeChannel(channel: string) {
             return { success: true, data };
           }
         }
-      } catch {
-        // Backend unavailable or user not registered — fall through to Groq
+      } catch (e) {
+        console.error('Backend analysis failed:', e);
       }
     }
 
-    // Analyze directly with Groq
+    // Attempted backend but failed, or no token
+    throw new Error('Analysis failed: Backend unavailable or user not registered.');
 
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert analyst. Summarize the following Telegram channel into a structured JSON with exactly these fields: title (string), summary (string, 2-3 sentences), insights (array of 3-5 strings), readers (string, comma-separated target audience). Output ONLY valid JSON.',
-        },
-        {
-          role: 'user',
-          content: `Analyze the Telegram channel: ${channel}. Based on the channel name, infer its likely content and audience.`,
-        },
-      ],
-      model: 'llama-3.3-70b-versatile',
-      response_format: { type: 'json_object' },
-    });
+    // Removed Groq fallback
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error('No content from Groq');
-
-    const parsedData = JSON.parse(content);
-
-    const data = {
-      title: parsedData.title || `Analysis of ${channel}`,
-      summary: parsedData.summary || 'No summary generated.',
-      insights: Array.isArray(parsedData.insights) ? parsedData.insights : [],
-      readers: parsedData.readers || 'General Audience',
-      cached: false,
-      is_mock: false,
-    };
-
-    // Persist to Supabase (non-blocking)
-    try {
-      await saveChannelAnalysis(supabase, channel, data, session?.user?.id, session?.user?.email ?? undefined);
-    } catch (dbError) {
-      console.warn('Failed to save analysis to DB:', dbError);
-    }
-
-    return { success: true, data };
   } catch (error: any) {
     console.error('Analysis error:', error);
     return {
