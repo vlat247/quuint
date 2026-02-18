@@ -157,8 +157,16 @@ export async function generateDigest(folderId: string) {
       messages: [
         {
           role: 'system',
-          content:
-            'You are an expert analyst. Create a digest for these Telegram channels. Return JSON with exactly these fields: title (string, catchy headline), summary (string, 2-3 sentence executive summary), insights (array of strings, 3-5 key points), cached (boolean, always false). Output ONLY valid JSON, no extra text.',
+          content: `You are an expert analyst. Create a digest for these Telegram channels.
+You MUST respond with ONLY a valid JSON object. No markdown, no explanation, no code blocks.
+The JSON must have exactly these fields:
+- "title": a string with a catchy headline
+- "summary": a string with a 2-3 sentence executive summary  
+- "insights": a JSON array of 3-5 strings, each a key insight
+- "cached": the boolean false
+
+Example of correct output:
+{"title":"Weekly Tech Digest","summary":"This week saw major advances in AI and crypto markets.","insights":["AI models are getting faster","Bitcoin hit new highs","Telegram added new features"],"cached":false}`,
         },
         {
           role: 'user',
@@ -166,20 +174,37 @@ export async function generateDigest(folderId: string) {
         },
       ],
       model: 'llama-3.3-70b-versatile',
-      response_format: { type: 'json_object' },
     });
 
     const content = completion.choices[0]?.message?.content;
     if (!content) throw new Error('No content from Groq');
 
-    const data = JSON.parse(content);
+    // Extract JSON from response (handle cases where model wraps in markdown)
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in Groq response');
+
+    const data = JSON.parse(jsonMatch[0]);
+
+    // Defensively handle insights — model sometimes returns it as a string
+    let insights: string[] = [];
+    if (Array.isArray(data.insights)) {
+      insights = data.insights;
+    } else if (typeof data.insights === 'string') {
+      // Try to parse it as JSON array, or split by newlines
+      try {
+        const parsed = JSON.parse(data.insights);
+        insights = Array.isArray(parsed) ? parsed : [data.insights];
+      } catch {
+        insights = data.insights.split('\n').filter((s: string) => s.trim());
+      }
+    }
 
     return {
       success: true,
       data: {
         title: data.title || 'Digest',
         summary: data.summary || '',
-        insights: Array.isArray(data.insights) ? data.insights : [],
+        insights,
         cached: false,
       },
     };
