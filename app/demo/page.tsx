@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import { analyzeChannel, createFolder, generateDigest } from "@/app/actions";
 import { DashboardHeader } from "@/components/demo/DashboardHeader";
 import { AuroraBackground } from "@/components/AuroraBackground";
@@ -11,8 +10,6 @@ import { ICON_MAP } from "@/components/demo/icons";
 import { supabase } from "@/lib/supabase/client";
 
 function DemoPageContent() {
-  const searchParams = useSearchParams();
-  const emailParam = searchParams.get("email");
   
   // -- Global State --
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
@@ -22,10 +19,8 @@ function DemoPageContent() {
   const [userEmail, setUserEmail] = useState<string | undefined>();
 
   // -- Sidebar State --
-  const [folders, setFolders] = useState<Array<{ id: string; name: string; channels: string[]; icon?: string }>>([
-    { id: "demo-1", name: "Tech News", channels: ["@verge", "@techcrunch"], icon: "Rocket" },
-    { id: "demo-2", name: "News", channels: ["@durov", "@telegram"], icon: "Newspaper" },
-  ]);
+  const [folders, setFolders] = useState<Array<{ id: string; name: string; channels: string[]; icon?: string }>>([]);
+  const [foldersLoading, setFoldersLoading] = useState(true);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   // -- Single Channel State --
@@ -49,16 +44,30 @@ function DemoPageContent() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // Fetch Supabase user on mount
+  // Fetch user from session on mount (includes full metadata without extra network call)
   useEffect(() => {
     async function fetchUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (user) {
         setUserEmail(user.email);
-        setUserNickname(user.user_metadata?.display_name);
+        const nick = user.user_metadata?.display_name || user.user_metadata?.full_name;
+        setUserNickname(nick);
       }
     }
     fetchUser();
+
+    // Also listen for auth state changes (e.g. after updateUser saves new display name)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user;
+      if (user) {
+        setUserEmail(user.email);
+        const nick = user.user_metadata?.display_name || user.user_metadata?.full_name;
+        setUserNickname(nick);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // -- Handlers --
@@ -70,12 +79,13 @@ function DemoPageContent() {
         const res = await fetch('/api/folders');
         if (res.ok) {
           const data = await res.json();
-          if (data.folders && data.folders.length > 0) {
-            setFolders(data.folders);
-          }
+          // Always replace with real DB folders (even if empty)
+          setFolders(data.folders ?? []);
         }
       } catch (error) {
         console.error('Failed to fetch folders:', error);
+      } finally {
+        setFoldersLoading(false);
       }
     }
     fetchFolders();
@@ -92,7 +102,7 @@ function DemoPageContent() {
      if (result.success) {
          setFolders(prev => prev.map(f => f.id === tempId ? { ...f, ...result.data, id: result.data.id } : f));
      } else {
-         alert("Failed to create folder on server");
+         alert(result.error || "Failed to create folder");
          // Rollback
          setFolders(prev => prev.filter(f => f.id !== tempId));
      }
@@ -108,11 +118,9 @@ function DemoPageContent() {
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!channel) return;
-    
-    const emailToUse = emailParam || "demo@quint.com"; 
 
     setLoading(true);
-    const result = await analyzeChannel(emailToUse, channel);
+    const result = await analyzeChannel(channel);
     setLoading(false);
     
     if (result.success && result.data) {
@@ -445,7 +453,7 @@ function DemoPageContent() {
       <AccountModal 
         isOpen={isAccountModalOpen} 
         onClose={() => setIsAccountModalOpen(false)} 
-        email={userEmail || emailParam || undefined}
+        email={userEmail}
         nickname={userNickname}
       />
     </div>

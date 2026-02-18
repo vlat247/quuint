@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const folders = await getUserFolders(supabase);
+  const folders = await getUserFolders(supabase, user.id);
   return NextResponse.json({ folders });
 }
 

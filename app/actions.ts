@@ -1,35 +1,36 @@
 'use server'
 
+import Groq from 'groq-sdk';
 import { createClient } from '@/lib/supabase/server';
 import { createFolderWithChannels, saveChannelAnalysis } from '@/lib/supabase/db';
+
+const BACKEND_URL = 'https://quint-backend-xq3u.onrender.com';
 
 export async function submitEmail(email: string) {
   try {
     const { earlyAccessApi, ApiError } = await import('@/lib/api');
     await earlyAccessApi(email);
-    
-    // Set cookie on success (even if backend handles it, we set it here for middleware/client checks if needed)
+
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
-    cookieStore.set('quint_early_access', 'true', { 
-      httpOnly: true, 
-      secure: process.env.NODE_ENV === 'production', 
-      sameSite: 'lax', 
+    cookieStore.set('quint_early_access', 'true', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 365 // 1 year
+      maxAge: 60 * 60 * 24 * 365,
     });
 
     return { success: true };
   } catch (error) {
-     if (error instanceof Error && error.name === 'ApiError') {
+    if (error instanceof Error && error.name === 'ApiError') {
       const apiError = error as unknown as { status: number; body: string };
-      // Try to parse the error body if it's JSON
       let errorMessage = 'Invalid email';
       try {
         const parsed = JSON.parse(apiError.body);
         if (parsed.detail) errorMessage = parsed.detail;
       } catch {
-         // fallback
+        // fallback
       }
       return { success: false, error: errorMessage };
     }
@@ -39,155 +40,211 @@ export async function submitEmail(email: string) {
 }
 
 export async function createFolder(name: string, channels: string[], icon: string) {
-   try {
+  try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
-        return { success: false, error: 'Unauthorized' };
+      return { success: false, error: 'Not logged in. Please sign in and try again.' };
     }
 
+    // Pass auth UUID — db.ts resolves to public.users.id internally (auto-creates if missing)
     const folder = await createFolderWithChannels(
-        supabase, 
-        user.id, 
-        name, 
-        icon || 'Folder', 
-        channels
+      supabase,
+      user.id,
+      name,
+      icon || 'Folder',
+      channels,
+      user.email
     );
-    
+
     return { success: true, data: folder };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create folder error:', error);
-    return { success: false, error: 'Failed to create folder' };
+    const message = error?.message || error?.details || JSON.stringify(error);
+    return { success: false, error: `Failed to create folder: ${message}` };
   }
 }
 
 export async function generateDigest(folderId: string) {
   try {
     const supabase = await createClient();
-    
-    // 1. Fetch Folder and Channels from Supabase
+
+    // Fetch folder
     const { data: folder, error } = await supabase
       .from('folders')
-      .select('*, channels(*)')
+      .select('*')
       .eq('id', folderId)
       .single();
 
     if (error || !folder) {
-        console.error('Folder not found:', error);
-        return { success: false, error: 'Folder not found' };
+      return { success: false, error: `Folder not found: ${error?.message || 'unknown error'}` };
     }
 
-    const channels = folder.channels || [];
+    // Fetch channels from folder_channels (real table name)
+    const { data: folderChannels, error: chError } = await supabase
+      .from('folder_channels')
+      .select('channel')
+      .eq('folder_id', folderId);
+
+    if (chError) {
+      return { success: false, error: `Failed to fetch channels: ${chError.message}` };
+    }
+
+    const channels = folderChannels ?? [];
     if (channels.length === 0) {
-        return { success: false, error: 'No channels in this folder to digest.' };
+      return { success: false, error: 'No channels in this folder to digest.' };
     }
 
-    // 2. Aggregate Content (Mocked)
-    const folderContent = channels.map((c: any) => `
-      Channel: ${c.name}
-      - Update 1 from ${c.name}: detailed insights on tech.
-      - Update 2 from ${c.name}: market movements and analysis.
-    `).join('\n');
+    // Get the user's session token to authenticate with the backend
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
 
-    // 3. Generate Digest with Groq
+    // Fetch real summaries from the backend for each channel
+    const summaries = await Promise.all(
+      channels.map(async (c: { channel: string }) => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/analyze`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ channel: c.channel }),
+          });
+          if (!res.ok) return `Channel: ${c.channel}\n- No data available.`;
+          const data = await res.json();
+          const summary = data.result?.summary || data.summary || 'No summary available.';
+          return `Channel: ${c.channel}\n${summary}`;
+        } catch {
+          return `Channel: ${c.channel}\n- Could not fetch data.`;
+        }
+      })
+    );
+
+    const folderContent = summaries.join('\n\n');
+
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    
+
     const completion = await groq.chat.completions.create({
       messages: [
         {
-          role: "system",
-          content: "You are an expert analyst. Create a digest for these Telegram channels. Return JSON with: title (catchy), summary (executive summary), insights (array of key points), cached (boolean true). Output ONLY JSON."
+          role: 'system',
+          content:
+            'You are an expert analyst. Create a digest for these Telegram channels. Return JSON with exactly these fields: title (string, catchy headline), summary (string, 2-3 sentence executive summary), insights (array of strings, 3-5 key points), cached (boolean, always false). Output ONLY valid JSON, no extra text.',
         },
         {
-          role: "user",
-          content: folderContent
-        }
+          role: 'user',
+          content: folderContent,
+        },
       ],
-      model: "llama-3.3-70b-versatile",
-      response_format: { type: "json_object" }
+      model: 'llama-3.3-70b-versatile',
+      response_format: { type: 'json_object' },
     });
 
     const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error("No content from Groq");
-    
+    if (!content) throw new Error('No content from Groq');
+
     const data = JSON.parse(content);
 
-    return { success: true, data };
-  } catch (error) {
+    return {
+      success: true,
+      data: {
+        title: data.title || 'Digest',
+        summary: data.summary || '',
+        insights: Array.isArray(data.insights) ? data.insights : [],
+        cached: false,
+      },
+    };
+  } catch (error: any) {
     console.error('Generate digest error:', error);
-    return { success: false, error: 'Failed to generate digest' };
+    return { success: false, error: `Failed to generate digest: ${error?.message || error}` };
   }
 }
 
-// ... imports
-import Groq from "groq-sdk";
-
-// ... existing code ...
-
-export async function analyzeChannel(email: string, channel: string) {
+export async function analyzeChannel(channel: string) {
   try {
-    // 1. Fetch Channel Content (Mocked for now as we don't have a Telegram scraper)
-    // In a real app, you'd use a Telegram API or scraper here.
-    const mockChannelContent = `
-      [Latest Posts from ${channel}]
-      1. AI is evolving rapidly. New models from Groq are changing the game with 500t/s inference speeds.
-      2. The future of coding is agentic. Tools like Cursor and Windsurf are leading the way.
-      3. Crypto markets are volatile this week. Bitcoin testing new highs.
-      4. Remember to drink water and touch grass.
-      5. Quint is the best tool for summarizing telegram channels.
-    `;
+    const supabase = await createClient();
 
-    // 2. Analyze with Groq (Real AI)
+    // Check backend cache first (don't fail if it errors)
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (token) {
+      try {
+        const cacheRes = await fetch(`${BACKEND_URL}/analyze`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ channel }),
+        });
+        if (cacheRes.ok) {
+          const backendData = await cacheRes.json();
+          const result = backendData.result || backendData;
+          if (result.summary) {
+            const data = {
+              title: result.title || `Analysis of ${channel}`,
+              summary: result.summary,
+              insights: Array.isArray(result.insights) ? result.insights : [],
+              readers: result.readers || result.audience || 'General Audience',
+              cached: backendData.cached ?? true,
+              is_mock: false,
+            };
+            return { success: true, data };
+          }
+        }
+      } catch {
+        // Backend unavailable or user not registered — fall through to Groq
+      }
+    }
+
+    // Analyze directly with Groq
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    
+
     const completion = await groq.chat.completions.create({
       messages: [
         {
-          role: "system",
-          content: "You are an expert analyst. Summarize the following Telegram channel content into a structured JSON format with fields: title, summary (brief), insights (array of strings), readers (comma separated list of target audience). Output ONLY JSON."
+          role: 'system',
+          content: 'You are an expert analyst. Summarize the following Telegram channel into a structured JSON with exactly these fields: title (string), summary (string, 2-3 sentences), insights (array of 3-5 strings), readers (string, comma-separated target audience). Output ONLY valid JSON.',
         },
         {
-          role: "user",
-          content: mockChannelContent
-        }
+          role: 'user',
+          content: `Analyze the Telegram channel: ${channel}. Based on the channel name, infer its likely content and audience.`,
+        },
       ],
-      model: "llama-3.3-70b-versatile",
-      response_format: { type: "json_object" }
+      model: 'llama-3.3-70b-versatile',
+      response_format: { type: 'json_object' },
     });
 
     const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error("No content from Groq");
-    
+    if (!content) throw new Error('No content from Groq');
+
     const parsedData = JSON.parse(content);
-    
-    // Ensure structure matches what frontend expects
+
     const data = {
-        title: parsedData.title || `Analysis of ${channel}`,
-        summary: parsedData.summary || "No summary generated.",
-        insights: parsedData.insights || [],
-        readers: parsedData.readers || "General Audience",
-        cached: false,
-        is_mock: false // It's real AI now!
+      title: parsedData.title || `Analysis of ${channel}`,
+      summary: parsedData.summary || 'No summary generated.',
+      insights: Array.isArray(parsedData.insights) ? parsedData.insights : [],
+      readers: parsedData.readers || 'General Audience',
+      cached: false,
+      is_mock: false,
     };
 
-    // 3. Persist Result to Supabase
+    // Persist to Supabase (non-blocking)
     try {
-        const supabase = await createClient();
-        await saveChannelAnalysis(supabase, channel, data);
+      await saveChannelAnalysis(supabase, channel, data, session?.user?.id, session?.user?.email ?? undefined);
     } catch (dbError) {
-        console.warn('Failed to save analysis to DB:', dbError);
+      console.warn('Failed to save analysis to DB:', dbError);
     }
 
     return { success: true, data };
-
   } catch (error: any) {
     console.error('Analysis error:', error);
-    const apiKeysExists = !!process.env.GROQ_API_KEY;
-    console.log('GROQ_API_KEY exists:', apiKeysExists);
-    return { 
-        success: false, 
-        error: `Failed to analyze: ${error?.message || error}. Key exists: ${apiKeysExists}` 
+    return {
+      success: false,
+      error: `Failed to analyze: ${error?.message || error}`,
     };
   }
 }

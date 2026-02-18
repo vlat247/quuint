@@ -66,6 +66,11 @@ export function Sidebar({
            </div>
         )}
         
+          {folders.length === 0 && !isCollapsed && (
+            <p className="px-2 py-3 text-xs text-zinc-400 animate-in fade-in">
+              No folders yet. Create one below.
+            </p>
+          )}
           {folders.map((folder) => {
             const IconComponent = ICON_MAP[folder.icon || "Folder"] || Folder;
             
