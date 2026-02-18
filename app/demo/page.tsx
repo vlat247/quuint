@@ -116,40 +116,18 @@ function DemoPageContent() {
     setLoading(false);
     
     if (result.success && result.data) {
-      let parsedData = result.data;
-      try {
-        if (parsedData?.summary && typeof parsedData.summary === 'string') {
-          const nestedData = JSON.parse(parsedData.summary);
-          parsedData = {
-            result: {
-              title: nestedData.title || parsedData.title,
-              summary: nestedData.summary || 'No summary available.',
-              insights: nestedData.insights || [],
-              readers: nestedData.readers || parsedData.readers || '',
-            },
-            cached: parsedData.cached,
-            is_mock: parsedData.is_mock,
-          } as any;
-        } else {
-            parsedData = {
-                result: {
-                  summary: parsedData?.summary || 'No summary available.',
-                  insights: parsedData?.insights || [],
-                  readers: parsedData?.readers || '',
-                }
-            } as any;
-        }
-      } catch (parseError) {
-        console.error('Failed to parse nested summary JSON:', parseError);
-        parsedData = {
-          result: {
-            summary: String(parsedData?.summary || 'Analysis complete.'),
-            insights: parsedData?.insights || [],
-            readers: parsedData?.readers || '',
-          }
-        } as any;
-      }
-      
+      const d = result.data;
+      const parsedData = {
+        result: {
+          title: d.title || channel,
+          summary: d.summary || 'No summary available.',
+          insights: Array.isArray(d.insights) ? d.insights : [],
+          readers: d.readers || '',
+        },
+        cached: d.cached,
+        is_mock: d.is_mock,
+      };
+
       setSingleChannelData(parsedData);
       setAnalyzed(true);
     } else {

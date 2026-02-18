@@ -1,16 +1,16 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 
 export default async function DemoLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const earlyAccess = cookieStore.get("quint_early_access");
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!earlyAccess) {
-    redirect("/#early-access");
+  if (!user) {
+    redirect('/auth?mode=login');
   }
 
   return <>{children}</>;
