@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createFolderWithChannels, saveChannelAnalysis } from '@/lib/supabase/db';
 
 const BACKEND_URL = 'https://quint-backend-xq3u.onrender.com';
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function submitEmail(email: string) {
   try {
@@ -100,21 +101,47 @@ export async function generateDigest(folderId: string) {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
 
-    // Fetch real summaries from the backend for each channel
+    // Fetch summaries for each channel — try backend cache first, fall back to Groq
+
     const summaries = await Promise.all(
       channels.map(async (c: { channel: string }) => {
+        // Try backend cache first
+        if (token) {
+          try {
+            const res = await fetch(`${BACKEND_URL}/analyze`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({ channel: c.channel }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const summary = data.result?.summary || data.summary;
+              if (summary) return `Channel: ${c.channel}\n${summary}`;
+            }
+          } catch {
+            // fall through to Groq
+          }
+        }
+
+        // Fall back to Groq directly
         try {
-          const res = await fetch(`${BACKEND_URL}/analyze`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({ channel: c.channel }),
+          const completion = await groq.chat.completions.create({
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert analyst. In 2-3 sentences, summarize what this Telegram channel likely covers based on its name. Be specific and informative.',
+              },
+              {
+                role: 'user',
+                content: `Summarize the Telegram channel: ${c.channel}`,
+              },
+            ],
+            model: 'llama-3.3-70b-versatile',
           });
-          if (!res.ok) return `Channel: ${c.channel}\n- No data available.`;
-          const data = await res.json();
-          const summary = data.result?.summary || data.summary || 'No summary available.';
+          const summary = completion.choices[0]?.message?.content || '';
           return `Channel: ${c.channel}\n${summary}`;
         } catch {
           return `Channel: ${c.channel}\n- Could not fetch data.`;
@@ -201,7 +228,6 @@ export async function analyzeChannel(channel: string) {
     }
 
     // Analyze directly with Groq
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const completion = await groq.chat.completions.create({
       messages: [
