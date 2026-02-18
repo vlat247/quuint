@@ -180,8 +180,14 @@ export async function analyzeChannel(email: string, channel: string) {
     }
 
     return { success: true, data };
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('Analysis error:', error);
-    return { success: false, error: 'Failed to analyze channel. Please check your API key.' };
+    const apiKeysExists = !!process.env.GROQ_API_KEY;
+    console.log('GROQ_API_KEY exists:', apiKeysExists);
+    return { 
+        success: false, 
+        error: `Failed to analyze: ${error?.message || error}. Key exists: ${apiKeysExists}` 
+    };
   }
 }
