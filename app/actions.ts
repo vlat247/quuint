@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server';
-import { createFolderWithChannels, saveChannelAnalysis } from '@/lib/supabase/db';
+import { createFolderWithChannels, saveChannelAnalysis, ensureUserExistsSafe } from '@/lib/supabase/db';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://quint-backend-xq3u.onrender.com';
 
@@ -249,4 +249,14 @@ export async function analyzeChannel(channel: string) {
       error: `Failed to analyze: ${error?.message || error}`,
     };
   }
+}
+
+export async function syncUser() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await ensureUserExistsSafe(supabase, user);
+    return { success: true };
+  }
+  return { success: false };
 }

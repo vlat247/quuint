@@ -120,3 +120,49 @@ export async function getChannelAnalysis(supabase: SupabaseClient, channelName: 
   if (error) return null;
   return data;
 }
+
+export async function ensureUserExists(supabase: SupabaseClient, user: { id: string; email?: string; user_metadata?: any }) {
+  if (!user || !user.id || !user.email) return;
+
+  const { error } = await supabase
+    .from('users')
+    .insert({
+      id: user.id,
+      email: user.email,
+      auth_id: user.id,
+      role: 'user',
+      username: user.user_metadata?.display_name || user.email.split('@')[0],
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  // "23505" is Postgres error code for unique_violation (already exists).
+  // We can ignore it, or relies on 'on conflict do nothing' if we used upsert/conflict syntax.
+  // Using .insert() without returning might throw, so let's use upsert with ignoreDuplicates: true
+  // actually, let's use explicit upsert for safety
+}
+
+// Re-implementing with upsert for robustness
+export async function ensureUserExistsSafe(supabase: SupabaseClient, user: { id: string; email?: string; user_metadata?: any }) {
+    if (!user || !user.id || !user.email) return;
+
+    try {
+        const { error } = await supabase
+            .from('users')
+            .upsert({
+                id: user.id,
+                email: user.email,
+                auth_id: user.id,
+                role: 'user',
+                username: user.user_metadata?.display_name || user.email.split('@')[0],
+                // created_at: undefined // Let DB handle default or preserve existing
+            }, { onConflict: 'id', ignoreDuplicates: true }); // Don't overwrite existing data
+
+        if (error) {
+             console.error('ensureUserExists error:', error);
+        }
+    } catch (e) {
+        console.error('ensureUserExists exception:', e);
+    }
+}

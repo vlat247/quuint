@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { syncUser } from "@/app/actions";
 
 function AuthPageContent() {
   const searchParams = useSearchParams();
@@ -50,6 +51,7 @@ function AuthPageContent() {
 
       // If session exists, user is immediately signed in (email confirmation disabled)
       if (data.session) {
+        await syncUser();
         window.location.href = "/demo";
         return;
       }
@@ -69,6 +71,7 @@ function AuthPageContent() {
         return;
       }
 
+      await syncUser();
       window.location.href = "/demo";
     }
   };
