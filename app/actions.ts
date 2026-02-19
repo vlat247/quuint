@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createFolderWithChannels, saveChannelAnalysis } from '@/lib/supabase/db';
 
-const BACKEND_URL = 'https://quint-backend-xq3u.onrender.com';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://quint-backend-xq3u.onrender.com';
 
 export async function submitEmail(email: string) {
   try {
@@ -110,7 +110,11 @@ export async function generateDigest(folderId: string) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
               },
-              body: JSON.stringify({ channel: c.channel }),
+              body: JSON.stringify({
+                channel: c.channel,
+                email: session.user.email,
+                model: 'llama-3.3-70b-versatile'
+              }),
             });
             if (res.ok) {
               const data = await res.json();
@@ -196,7 +200,11 @@ export async function analyzeChannel(channel: string) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ channel }),
+          body: JSON.stringify({
+            channel,
+            email: session.user.email,
+            model: 'llama-3.3-70b-versatile'
+          }),
         });
         if (cacheRes.ok) {
           const backendData = await cacheRes.json();
@@ -212,14 +220,25 @@ export async function analyzeChannel(channel: string) {
             };
             return { success: true, data };
           }
+        } else {
+          const errorText = await cacheRes.text();
+          console.error(`Backend analysis failed: ${cacheRes.status}`, errorText);
+          throw new Error(`Analysis failed: Backend returned ${cacheRes.status} - ${errorText}`);
         }
-      } catch (e) {
-        console.error('Backend analysis failed:', e);
+      } catch (e: any) {
+        console.error('Backend analysis failed (network/unexpected):', e);
+        if (e instanceof Error && e.message.includes('Backend returned')) {
+           throw e;
+        }
+        throw new Error(`Analysis failed: Could not connect to backend server. ${e.message}`);
       }
+    } else {
+      console.warn('Analysis failed: No session token found.');
+      throw new Error('Analysis failed: You must be logged in to analyze a channel.');
     }
 
-    // Attempted backend but failed, or no token
-    throw new Error('Analysis failed: Backend unavailable or user not registered.');
+    // This part is unreachable if token logic is correct, but safer to keep structured
+    throw new Error('Analysis failed: Unknown error.');
 
     // Removed Groq fallback
 

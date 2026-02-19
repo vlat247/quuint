@@ -38,6 +38,7 @@ function AuthPageContent() {
         password,
         options: {
           data: { display_name: nickname },
+          emailRedirectTo: `${location.origin}/auth/callback`,
         },
       });
 
