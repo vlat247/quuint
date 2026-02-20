@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { analyzeChannel, createFolder, generateDigest } from "@/app/actions";
+import { analyzeChannel, createFolder, generateDigest, getUserHistory } from "@/app/actions";
 import { DashboardHeader } from "@/components/demo/DashboardHeader";
 import { AuroraBackground } from "@/components/AuroraBackground";
 import { Sidebar } from "@/components/demo/Sidebar";
@@ -34,6 +34,9 @@ function DemoPageContent() {
   const [generatingDigest, setGeneratingDigest] = useState(false);
   const [digestData, setDigestData] = useState<any>(null);
   const [digestError, setDigestError] = useState("");
+
+  // -- History State --
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -74,21 +77,30 @@ function DemoPageContent() {
 
   // Fetch folders on mount
   useEffect(() => {
-    async function fetchFolders() {
+    async function fetchFoldersAndHistory() {
       try {
-        const res = await fetch('/api/folders');
-        if (res.ok) {
-          const data = await res.json();
+        const [foldersRes, historyRes] = await Promise.all([
+          fetch('/api/folders'),
+          fetch('/api/history')
+        ]);
+
+        if (foldersRes.ok) {
+          const data = await foldersRes.json();
           // Always replace with real DB folders (even if empty)
           setFolders(data.folders ?? []);
         }
+
+        if (historyRes.ok) {
+          const res = await historyRes.json();
+          if (res.success) setHistoryItems(res.data || []);
+        }
       } catch (error) {
-        console.error('Failed to fetch folders:', error);
+        console.error('Failed to fetch data:', error);
       } finally {
         setFoldersLoading(false);
       }
     }
-    fetchFolders();
+    fetchFoldersAndHistory();
   }, []);
 
   const handleCreateFolder = async (name: string, channelsList: string[], icon: string) => {
@@ -138,6 +150,15 @@ function DemoPageContent() {
 
       setSingleChannelData(parsedData);
       setAnalyzed(true);
+
+      // Optimistically add to history
+      setHistoryItems(prev => [{
+        id: crypto.randomUUID(),
+        channel: channel,
+        summary: d,
+        created_at: new Date().toISOString()
+      }, ...prev]);
+
     } else {
       alert(result.error || "Analysis failed. Please try again.");
     }
@@ -154,8 +175,43 @@ function DemoPageContent() {
 
     if (result.success) {
        setDigestData(result.data);
+       // Optimistically add to history
+       setHistoryItems(prev => [{
+         id: crypto.randomUUID(),
+         channel: `[Digest] ${selectedFolderId}`,
+         summary: result.data,
+         created_at: new Date().toISOString()
+       }, ...prev]);
     } else {
        setDigestError(result.error || "Failed to generate digest");
+    }
+  };
+
+  const handleSelectHistory = (item: any) => {
+    if (item.channel.startsWith("[Digest]")) {
+      // It's a digest
+      const folderId = item.channel.replace("[Digest] ", "");
+      setSelectedFolderId(folderId);
+      setDigestData(item.summary);
+      setDigestError("");
+    } else {
+      // It's a channel analysis
+      setSelectedFolderId(null);
+      setChannel(item.channel);
+      
+      const d = item.summary;
+      setSingleChannelData({
+        result: {
+          title: d.title || item.channel,
+          summary: d.summary || 'No summary available.',
+          insights: Array.isArray(d.insights) ? d.insights : [],
+          readers: d.readers || '',
+        },
+        cached: d.cached ?? true,
+        is_mock: false,
+      });
+      setAnalyzed(true);
+      setActiveTab("summary");
     }
   };
 
@@ -174,6 +230,8 @@ function DemoPageContent() {
         toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         onOpenAccountSettings={() => setIsAccountModalOpen(true)}
         userName={userNickname}
+        historyItems={historyItems}
+        onSelectHistory={handleSelectHistory}
       />
 
       <main className="flex-1 relative flex flex-col h-full overflow-hidden transition-all duration-300">

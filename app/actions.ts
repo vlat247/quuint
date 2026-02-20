@@ -169,18 +169,68 @@ export async function generateDigest(folderId: string) {
       }
     }
 
+    const finalData = {
+      title: data.title || 'Digest',
+      summary: data.summary || '',
+      insights,
+      cached: data.cached ?? false, // Assume backend indicates caching
+      readers: Object.keys(data).includes("readers") ? data.readers : undefined
+    };
+
+    // Save to history using [Digest] prefix to distinguish it
+    if (session && session.user) {
+      await saveChannelAnalysis(
+          supabase,
+          `[Digest] ${folderId}`,
+          finalData,
+          session.user.id,
+          session.user.email
+      );
+    }
+
     return {
       success: true,
-      data: {
-        title: data.title || 'Digest',
-        summary: data.summary || '',
-        insights,
-        cached: data.cached ?? false, // Assume backend indicates caching
-      },
+      data: finalData,
     };
   } catch (error: any) {
     console.error('Generate digest error:', error);
     return { success: false, error: `Failed to generate digest: ${error?.message || error}` };
+  }
+}
+
+export async function getUserHistory() {
+  try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      return { success: false, error: 'Not logged in' };
+    }
+
+    // Get public user id
+    const { data: publicUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', session.user.id)
+      .maybeSingle();
+
+    if (!publicUser) {
+      return { success: true, data: [] };
+    }
+
+    const { data: history, error } = await supabase
+      .from('summaries')
+      .select('*')
+      .eq('user_id', publicUser.id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (error) throw error;
+    
+    return { success: true, data: history || [] };
+  } catch (error: any) {
+    console.error('Fetch history error:', error);
+    return { success: false, error: 'Failed to fetch history' };
   }
 }
 
@@ -218,6 +268,18 @@ export async function analyzeChannel(channel: string) {
               cached: backendData.cached ?? true,
               is_mock: false,
             };
+
+            // Save individual channel analysis to history
+            if (session.user) {
+              await saveChannelAnalysis(
+                supabase,
+                channel,
+                data,
+                session.user.id,
+                session.user.email
+              );
+            }
+
             return { success: true, data };
           }
         } else {

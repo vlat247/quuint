@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { 
   Plus, 
@@ -14,6 +14,13 @@ import {
 import { FolderModal } from "./FolderModal";
 import { ICON_MAP } from "./icons";
 
+export interface HistoryItem {
+  id: string;
+  channel: string;
+  summary: any;
+  created_at: string;
+}
+
 interface SidebarProps {
   folders: Array<{ id: string; name: string; channels: string[]; icon?: string }>;
   selectedFolderId: string | null;
@@ -23,6 +30,8 @@ interface SidebarProps {
   toggleSidebar: () => void;
   onOpenAccountSettings?: () => void;
   userName?: string;
+  historyItems?: HistoryItem[];
+  onSelectHistory?: (item: HistoryItem) => void;
 }
 
 export function Sidebar({ 
@@ -33,15 +42,68 @@ export function Sidebar({
   isCollapsed,
   toggleSidebar,
   onOpenAccountSettings,
-  userName
+  userName,
+  historyItems = [],
+  onSelectHistory
 }: SidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    const savedWidth = localStorage.getItem("quint_sidebar_width");
+    if (savedWidth) {
+      const parsedWidth = Number(savedWidth);
+      const maxWidth = typeof window !== "undefined" ? window.innerWidth * 0.25 : 600;
+      setSidebarWidth(Math.min(Math.max(200, parsedWidth), Math.max(200, maxWidth)));
+    }
+  }, []);
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((e: MouseEvent) => {
+    if (isResizing) {
+      let newWidth = e.clientX;
+      const maxWidth = typeof window !== "undefined" ? window.innerWidth * 0.25 : 600;
+      const clampedMaxWidth = Math.max(200, maxWidth);
+      
+      if (newWidth < 200) newWidth = 200;
+      if (newWidth > clampedMaxWidth) newWidth = clampedMaxWidth;
+      
+      setSidebarWidth(newWidth);
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", resize);
+      window.addEventListener("mouseup", stopResizing);
+    }
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
+  useEffect(() => {
+    if (!isResizing) {
+      localStorage.setItem("quint_sidebar_width", sidebarWidth.toString());
+    }
+  }, [sidebarWidth, isResizing]);
 
   return (
     <div 
-      className={`relative flex flex-col border-r border-zinc-200 bg-zinc-50/50 h-screen transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-16" : "w-64"
+      className={`relative z-20 flex flex-col border-r border-zinc-200 bg-zinc-50/50 h-screen shrink-0 ${
+        isResizing ? "" : "transition-all duration-300 ease-in-out"
       }`}
+      style={{ width: isCollapsed ? 64 : sidebarWidth }}
     >
       {/* Header */}
       <div className={`flex items-center h-16 border-b border-zinc-200/50 ${isCollapsed ? "justify-center px-0" : "px-4 justify-between"}`}>
@@ -58,41 +120,86 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Folders List */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-1 px-2">
-        {!isCollapsed && (
-           <div className="px-2 pb-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider animate-in fade-in">
-             Folders
-           </div>
-        )}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Folders List */}
+        <div className="py-4 space-y-1 px-2">
+          {!isCollapsed && (
+             <div className="px-2 pb-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider animate-in fade-in">
+               Folders
+             </div>
+          )}
+          
+            {folders.length === 0 && !isCollapsed && (
+              <p className="px-2 py-3 text-xs text-zinc-400 animate-in fade-in">
+                No folders yet. Create one below.
+              </p>
+            )}
+            {folders.map((folder) => {
+              const IconComponent = ICON_MAP[folder.icon || "Folder"] || Folder;
+              
+              return (
+                <button
+                  key={folder.id}
+                  onClick={() => onSelectFolder(folder.id)}
+                  className={`group w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-all ${
+                    selectedFolderId === folder.id
+                      ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200"
+                      : "text-zinc-600 hover:bg-zinc-200/50 hover:text-zinc-900"
+                  } ${isCollapsed ? "justify-center" : ""}`}
+                  title={isCollapsed ? folder.name : undefined}
+                >
+                  <IconComponent className={`h-5 w-5 shrink-0 ${selectedFolderId === folder.id ? "text-zinc-900" : "text-zinc-500 group-hover:text-zinc-900"}`} />
+                  
+                  {!isCollapsed && (
+                      <span className="font-medium truncate animate-in fade-in duration-200">{folder.name}</span>
+                  )}
+                </button>
+              );
+            })}
+        </div>
         
-          {folders.length === 0 && !isCollapsed && (
+        {/* History List */}
+        <div className="py-2 space-y-1 px-2 border-t border-zinc-200/50">
+          {!isCollapsed && (
+             <div className="px-2 pb-2 pt-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider animate-in fade-in">
+               History
+             </div>
+          )}
+          
+          {historyItems.length === 0 && !isCollapsed && (
             <p className="px-2 py-3 text-xs text-zinc-400 animate-in fade-in">
-              No folders yet. Create one below.
+              No history yet.
             </p>
           )}
-          {folders.map((folder) => {
-            const IconComponent = ICON_MAP[folder.icon || "Folder"] || Folder;
+          
+          {historyItems.map((item) => {
+            const isDigest = item.channel.startsWith("[Digest]");
+            const displayName = isDigest ? "Digest" : item.channel;
+            const IconComponent = isDigest ? Folder : LayoutDashboard;
             
             return (
               <button
-                key={folder.id}
-                onClick={() => onSelectFolder(folder.id)}
-                className={`group w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-all ${
-                  selectedFolderId === folder.id
-                    ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200"
-                    : "text-zinc-600 hover:bg-zinc-200/50 hover:text-zinc-900"
-                } ${isCollapsed ? "justify-center" : ""}`}
-                title={isCollapsed ? folder.name : undefined}
+                key={item.id}
+                onClick={() => onSelectHistory?.(item)}
+                className={`group w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-all text-zinc-600 hover:bg-zinc-200/50 hover:text-zinc-900 ${
+                  isCollapsed ? "justify-center" : ""
+                }`}
+                title={isCollapsed ? displayName : undefined}
               >
-                <IconComponent className={`h-5 w-5 shrink-0 ${selectedFolderId === folder.id ? "text-zinc-900" : "text-zinc-500 group-hover:text-zinc-900"}`} />
+                <IconComponent className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-zinc-600" />
                 
                 {!isCollapsed && (
-                    <span className="font-medium truncate animate-in fade-in duration-200">{folder.name}</span>
+                  <div className="flex flex-col items-start truncate animate-in fade-in duration-200 w-full overflow-hidden">
+                    <span className="font-medium truncate w-full text-left">{displayName}</span>
+                    <span className="text-[10px] text-zinc-400 leading-none mt-1">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 )}
               </button>
             );
           })}
+        </div>
       </div>
       
        {/* New Folder Button */}
@@ -135,6 +242,15 @@ export function Sidebar({
           setIsModalOpen(false);
         }}
       />
+
+      {!isCollapsed && (
+        <div
+          onMouseDown={startResizing}
+          className={`absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-50 hover:bg-zinc-300 transition-colors ${
+            isResizing ? "bg-zinc-400" : "bg-transparent"
+          }`}
+        />
+      )}
     </div>
   );
 }
