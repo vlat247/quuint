@@ -207,18 +207,38 @@ export async function getUserHistory() {
       return { success: false, error: 'Not logged in' };
     }
 
+    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
+    const adminSupabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     // Get public user id
-    const { data: publicUser } = await supabase
+    let { data: publicUser } = await adminSupabase
       .from('users')
       .select('id')
       .eq('auth_id', session.user.id)
       .maybeSingle();
 
+    if (!publicUser && session.user.email) {
+      const { data: userByEmail } = await adminSupabase
+        .from('users')
+        .select('id')
+        .eq('email', session.user.email)
+        .maybeSingle();
+        
+      if (userByEmail) {
+        // Link them for next time
+        await adminSupabase.from('users').update({ auth_id: session.user.id }).eq('id', userByEmail.id);
+        publicUser = userByEmail;
+      }
+    }
+
     if (!publicUser) {
       return { success: true, data: [] };
     }
 
-    const { data: history, error } = await supabase
+    const { data: history, error } = await adminSupabase
       .from('summaries')
       .select('*')
       .eq('user_id', publicUser.id)

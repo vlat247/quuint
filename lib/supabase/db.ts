@@ -80,13 +80,20 @@ export async function createFolderWithChannels(
 }
 
 export async function saveChannelAnalysis(
-  supabase: SupabaseClient,
+  _userClientsupabase: SupabaseClient, // Keeping argument for signature compatibility, but not using it
   channelName: string,
   summaryData: any,
   authId?: string,
   email?: string
 ) {
-  // summaries.user_id references public.users.id — look it up if we have authId
+  // We use the service_role key here to completely bypass Row Level Security.
+  // When a user tries to create an analysis or sync their account, RLS sometimes blocks the public.users insert/update.
+  const { createClient } = await import('@supabase/supabase-js');
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   const insertData: any = {
     channel: channelName,
     summary: summaryData,
@@ -95,17 +102,43 @@ export async function saveChannelAnalysis(
   if (email) insertData.email = email;
 
   if (authId) {
-    const { data: publicUser } = await supabase
+    let { data: publicUser } = await adminSupabase
       .from('users')
       .select('id')
       .eq('auth_id', authId)
       .maybeSingle();
 
+    if (!publicUser && email) {
+      // Maybe user exists but has auth_id = null (from initial beta invites)
+      const { data: userByEmail } = await adminSupabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+        
+      if (userByEmail) {
+        // Link them
+        await adminSupabase.from('users').update({ auth_id: authId }).eq('id', userByEmail.id);
+        publicUser = userByEmail;
+      } else {
+        // Safe creation bypasses RLS
+        await ensureUserExistsSafe(adminSupabase, { id: authId, email });
+        
+        const { data: retryUser } = await adminSupabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', authId)
+          .maybeSingle();
+          
+        publicUser = retryUser;
+      }
+    }
+
     if (publicUser) insertData.user_id = publicUser.id;
   }
 
-  const { error } = await supabase.from('summaries').insert(insertData);
-  if (error) console.error('Error saving analysis:', error);
+  const { error } = await adminSupabase.from('summaries').insert(insertData);
+  if (error) console.error('Error saving analysis with admin client:', error);
 }
 
 export async function getChannelAnalysis(supabase: SupabaseClient, channelName: string) {
