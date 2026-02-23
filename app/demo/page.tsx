@@ -14,6 +14,7 @@ function DemoPageContent() {
   // -- Global State --
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [userNickname, setUserNickname] = useState<string | undefined>();
   const [userEmail, setUserEmail] = useState<string | undefined>();
@@ -232,6 +233,8 @@ function DemoPageContent() {
         userName={userNickname}
         historyItems={historyItems}
         onSelectHistory={handleSelectHistory}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
       <main className="flex-1 relative flex flex-col h-full overflow-hidden transition-all duration-300">
@@ -281,6 +284,7 @@ function DemoPageContent() {
                 isSidebarCollapsed={isSidebarCollapsed}
                 onHomeClick={() => setSelectedFolderId(null)}
                 onProfileClick={() => setIsAccountModalOpen(true)}
+                onMobileMenuClick={() => setIsMobileSidebarOpen(true)}
              />
            </div>
 
@@ -293,7 +297,7 @@ function DemoPageContent() {
                       <h1 className="text-4xl font-semibold text-zinc-900 sm:text-5xl">
                         Analyze a Channel
                       </h1>
-                      <p className="mt-4 text-xl text-zinc-500">
+                      <p className="mt-4 text-xl text-zinc-500 hidden md:block">
                         Enter a Telegram channel to see its insights.
                       </p>
                     </div>
