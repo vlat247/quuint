@@ -203,54 +203,72 @@ export async function getUserHistory() {
     const supabase = await createClient();
     const { data: { session } } = await supabase.auth.getSession();
     
-    if (!session?.user) {
+    if (!session?.access_token) {
       return { success: false, error: 'Not logged in' };
     }
 
-    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
-    const adminSupabase = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const emailParam = session.user?.email ? `?email=${encodeURIComponent(session.user.email)}` : '';
 
-    // Get public user id
-    let { data: publicUser } = await adminSupabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', session.user.id)
-      .maybeSingle();
+    const res = await fetch(`${BACKEND_URL}/history${emailParam}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
 
-    if (!publicUser && session.user.email) {
-      const { data: userByEmail } = await adminSupabase
-        .from('users')
-        .select('id')
-        .eq('email', session.user.email)
-        .maybeSingle();
-        
-      if (userByEmail) {
-        // Link them for next time
-        await adminSupabase.from('users').update({ auth_id: session.user.id }).eq('id', userByEmail.id);
-        publicUser = userByEmail;
-      }
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Backend history API error: ${res.status} - ${errorText}`);
+      return { success: false, error: `Backend returned ${res.status}` };
     }
 
-    if (!publicUser) {
-      return { success: true, data: [] };
-    }
-
-    const { data: history, error } = await adminSupabase
-      .from('summaries')
-      .select('*')
-      .eq('user_id', publicUser.id)
-      .order('created_at', { ascending: false })
-      .limit(30);
-
-    if (error) throw error;
-    
-    return { success: true, data: history || [] };
+    const data = await res.json();
+    return { success: true, data: data.history || [], total: data.total || 0 };
   } catch (error: any) {
     console.error('Fetch history error:', error);
     return { success: false, error: 'Failed to fetch history' };
+  }
+}
+
+export async function searchAnalyses(query: string, limit: number = 10) {
+  try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
+      return { success: false, error: 'Not logged in' };
+    }
+
+    const res = await fetch(`${BACKEND_URL}/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ query, limit, email: session.user.email })
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Backend search API error: ${res.status} - ${errorText}`);
+      // Special handling for 503 (Jina AI down)
+      if (res.status === 503) {
+        return { success: false, error: 'Search is temporarily unavailable' };
+      }
+      return { success: false, error: `Search failed: ${res.status}` };
+    }
+
+    const data = await res.json();
+    return { 
+      success: true, 
+      results: data.results || [], 
+      query: data.query, 
+      total: data.total || 0 
+    };
+  } catch (error: any) {
+    console.error('Search error:', error);
+    return { success: false, error: 'Failed to perform search' };
   }
 }
 
@@ -286,7 +304,17 @@ export async function analyzeChannel(channel: string) {
               insights: Array.isArray(result.insights) ? result.insights : [],
               readers: result.readers || result.audience || 'General Audience',
               cached: backendData.cached ?? true,
-              is_mock: false,
+              is_mock: result.is_mock ?? false,
+              rating: result.rating,
+              rating_feedback: result.rating_feedback,
+              core_idea: result.core_idea,
+              date_range: result.date_range,
+              freshness: result.freshness,
+              relevance_score: result.relevance_score,
+              concepts: result.concepts,
+              tools_and_resources: result.tools_and_resources,
+              action_steps: result.action_steps,
+              open_questions: result.open_questions,
             };
 
             // Save individual channel analysis to history

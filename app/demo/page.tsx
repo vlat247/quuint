@@ -39,6 +39,12 @@ function DemoPageContent() {
   // -- History State --
   const [historyItems, setHistoryItems] = useState<any[]>([]);
 
+  // -- Search State --
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX, y: e.clientY });
@@ -140,6 +146,7 @@ function DemoPageContent() {
       const d = result.data;
       const parsedData = {
         result: {
+          ...d, // Base fields from backend
           title: d.title || channel,
           summary: d.summary || 'No summary available.',
           insights: Array.isArray(d.insights) ? d.insights : [],
@@ -198,15 +205,18 @@ function DemoPageContent() {
     } else {
       // It's a channel analysis
       setSelectedFolderId(null);
-      setChannel(item.channel);
+      setChannel(item.channel || item.title);
       
-      const d = item.summary;
+      const d = item.summary || item; // Handle direct backend format or nested format
       setSingleChannelData({
         result: {
-          title: d.title || item.channel,
-          summary: d.summary || 'No summary available.',
-          insights: Array.isArray(d.insights) ? d.insights : [],
-          readers: d.readers || '',
+          title: item.title || item.channel,
+          summary: d.summary || d || 'No summary available.', // Backward compatibility
+          insights: Array.isArray(d.insights) ? d.insights : Array.isArray(item.insights) ? item.insights : [],
+          readers: item.readers || d.readers || '',
+          rating: item.rating || d.rating,
+          rating_feedback: item.rating_feedback || d.rating_feedback,
+          core_idea: item.core_idea || d.core_idea,
         },
         cached: d.cached ?? true,
         is_mock: false,
@@ -215,6 +225,37 @@ function DemoPageContent() {
       setActiveTab("summary");
     }
   };
+
+  // Search effect
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.trim().length >= 2) {
+        setIsSearching(true);
+        setSearchError("");
+        
+        try {
+          const { searchAnalyses } = await import('@/app/actions');
+          const res = await searchAnalyses(searchQuery);
+          if (res.success) {
+            setSearchResults(res.results || []);
+          } else {
+            setSearchError(res.error || "Search failed");
+            setSearchResults([]);
+          }
+        } catch (err) {
+          setSearchError("Search failed to execute");
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+        setSearchError("");
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   const selectedFolder = folders.find(f => f.id === selectedFolderId);
   const SelectedIcon = selectedFolder ? (ICON_MAP[selectedFolder.icon || "Folder"] || ICON_MAP["Folder"]) : null;
@@ -326,16 +367,44 @@ function DemoPageContent() {
                         <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
                             <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl">
                               {/* Header */}
-                              <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-4 flex items-center justify-between">
+                              {singleChannelData?.is_mock && (
+                                <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 flex items-center gap-2 text-amber-700 text-sm font-medium">
+                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                  AI temporarily unavailable. Showing partial or cached data.
+                                </div>
+                              )}
+                              <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
                                 <div className="flex items-center gap-3">
                                   <div className="h-10 w-10 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 font-bold text-lg">
-                                    {channel.slice(0, 2).toUpperCase()}
+                                    {channel.trim().slice(0, 2).toUpperCase() || 'CH'}
                                   </div>
                                   <div>
-                                    <h2 className="font-semibold text-zinc-900">{channel}</h2>
-                                    <p className="text-sm text-zinc-500">Analysis complete</p>
+                                    <h2 className="font-semibold text-zinc-900">{singleChannelData?.result?.title || channel}</h2>
+                                    <div className="flex items-center gap-2 text-sm text-zinc-500">
+                                      <span>Analysis complete</span>
+                                      {singleChannelData?.result?.freshness && (
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                          singleChannelData.result.freshness === 'today' ? 'bg-green-100 text-green-700' :
+                                          singleChannelData.result.freshness === 'this_week' ? 'bg-blue-100 text-blue-700' :
+                                          'bg-zinc-200 text-zinc-700'
+                                        }`}>
+                                          {singleChannelData.result.freshness.replace('_', ' ')}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
+                                
+                                {singleChannelData?.result?.rating && (
+                                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+                                    singleChannelData.result.rating >= 8 ? 'bg-green-50 border-green-200 text-green-700' :
+                                    singleChannelData.result.rating >= 5 ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                                    'bg-red-50 border-red-200 text-red-700'
+                                  }`}>
+                                    <span className="text-sm font-bold">Rating: {singleChannelData.result.rating}/10</span>
+                                    <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Tabs */}
@@ -358,25 +427,68 @@ function DemoPageContent() {
                               {/* Content */}
                               <div className="min-h-[300px] bg-zinc-50/30 p-8">
                                 {activeTab === "summary" && (
-                                  <div className="animate-in fade-in duration-300 space-y-6">
+                                  <div className="animate-in fade-in duration-300 space-y-8">
                                     <div>
                                       <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-2">Primary Intent</h3>
                                       <p className="text-xl leading-relaxed text-zinc-800">
                                         {singleChannelData?.result?.summary || "Analysis not available."}
                                       </p>
                                     </div>
-                                    <div>
-                                      <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-2">Key Takeaways</h3>
-                                      <ul className="space-y-3 text-lg text-zinc-700">
-                                        {singleChannelData?.result?.insights?.map((insight: string, i: number) => (
-                                          <li key={i} className="flex items-start gap-2">
-                                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-zinc-400 shrink-0"></span>
-                                            <span>{insight}</span>
-                                          </li>
-                                        )) || (
-                                          <li>No insights generated.</li>
+                                    
+                                    {singleChannelData?.result?.core_idea && (
+                                       <div>
+                                          <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-2">Core Idea</h3>
+                                          <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-900 font-medium">
+                                            {singleChannelData.result.core_idea}
+                                          </div>
+                                       </div>
+                                    )}
+
+                                    {singleChannelData?.result?.rating_feedback && (
+                                      <div className="grid sm:grid-cols-2 gap-4">
+                                        {singleChannelData.result.rating_feedback.positives?.length > 0 && (
+                                          <div className="p-4 bg-green-50 border border-green-200 rounded-xl shadow-sm">
+                                            <h4 className="text-sm font-bold text-green-700 uppercase mb-3 flex items-center gap-2">
+                                              <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                              Strengths
+                                            </h4>
+                                            <ul className="space-y-2">
+                                              {singleChannelData.result.rating_feedback.positives.map((p: string, i: number) => (
+                                                <li key={i} className="text-sm text-green-900">{p}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
                                         )}
-                                      </ul>
+                                        {singleChannelData.result.rating_feedback.negatives?.length > 0 && (
+                                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl shadow-sm">
+                                            <h4 className="text-sm font-bold text-amber-700 uppercase mb-3 flex items-center gap-2">
+                                              <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                              Weaknesses
+                                            </h4>
+                                            <ul className="space-y-2">
+                                              {singleChannelData.result.rating_feedback.negatives.map((n: string, i: number) => (
+                                                <li key={i} className="text-sm text-amber-900">{n}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    <div>
+                                      <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-3">Key Takeaways</h3>
+                                      <div className="grid gap-3">
+                                        {singleChannelData?.result?.insights?.map((insight: string, i: number) => (
+                                          <div key={i} className="flex gap-4 p-4 rounded-xl bg-white border border-zinc-200/60 shadow-sm">
+                                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-bold text-zinc-600">
+                                                  {i + 1}
+                                              </span>
+                                              <p className="text-zinc-700 leading-relaxed font-medium">{insight}</p>
+                                          </div>
+                                        )) || (
+                                          <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 text-zinc-500">No insights generated.</div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 )}
@@ -409,9 +521,72 @@ function DemoPageContent() {
                                             </div>
                                             <input 
                                                 type="text" 
-                                                placeholder="Ask a question about this channel..." 
-                                                className="w-full pl-10 pr-4 py-3 rounded-lg border border-zinc-200 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 bg-white"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                placeholder="Search across your saved analyses and digests..." 
+                                                className="w-full pl-10 pr-10 py-3 rounded-lg border border-zinc-200 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 bg-white shadow-sm"
                                             />
+                                            {isSearching && (
+                                              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                                                <svg className="animate-spin h-5 w-5 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                              </div>
+                                            )}
+                                        </div>
+
+                                        {searchError && (
+                                          <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-100">
+                                            {searchError}
+                                          </div>
+                                        )}
+
+                                        <div className="space-y-6 pb-6 pt-2">
+                                          {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && !searchError && (
+                                              <p className="text-zinc-500 text-center py-8">No results found. Try different keywords.</p>
+                                          )}
+                                          
+                                          {searchResults.map((result: any, i: number) => (
+                                            <div key={i} className="group p-6 rounded-2xl bg-white border border-zinc-200/60 shadow-sm hover:border-zinc-300 hover:shadow-md transition-all duration-200 relative overflow-hidden">
+                                              {/* Optional hover line effect */}
+                                              <div className="absolute top-0 left-0 w-1 h-full bg-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                              
+                                              <div className="flex justify-between items-start mb-4">
+                                                <div className="flex items-center gap-3">
+                                                  <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest ${
+                                                    result.type === 'digest' ? 'bg-purple-100 text-purple-700' : 'bg-zinc-100 text-zinc-600'
+                                                  }`}>
+                                                    {result.type}
+                                                  </span>
+                                                  <h4 className="font-semibold text-lg text-zinc-900 group-hover:text-zinc-700 transition-colors">{result.title}</h4>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                  {result.rating > 0 && (
+                                                    <span className="text-sm font-bold text-zinc-700 flex items-center gap-1.5 bg-zinc-50 px-2.5 py-1 rounded-lg border border-zinc-100">
+                                                      {result.rating}/10
+                                                      <svg className="h-4 w-4 text-zinc-900 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                                    </span>
+                                                  )}
+                                                  {result.similarity && (
+                                                    <span className="text-xs font-bold text-green-700 bg-green-50/80 px-2.5 py-1 rounded-md border border-green-100">
+                                                      {Math.round(result.similarity * 100)}% Match
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <p className="text-base text-zinc-600 leading-relaxed mb-5">{result.summary}</p>
+                                              
+                                              {result.insights && result.insights.length > 0 && (
+                                                <div className="mt-5 pt-4 border-t border-zinc-100">
+                                                  <div className="flex items-center gap-2 mb-3">
+                                                    <svg className="h-4 w-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Relevant Insight</p>
+                                                  </div>
+                                                  <div className="bg-zinc-50 border border-zinc-100 rounded-xl p-4">
+                                                    <p className="text-sm font-medium text-zinc-800 leading-relaxed">"{result.insights[0]}"</p>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
                                         </div>
                                     </div>
                                 )}
@@ -489,19 +664,21 @@ function DemoPageContent() {
                                     </p>
                                 </section>
 
-                                <section>
-                                     <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4">Key Insights</h3>
-                                     <div className="grid gap-3">
-                                         {digestData.insights.map((insight: string, i: number) => (
-                                             <div key={i} className="flex gap-4 p-4 rounded-xl bg-zinc-50 border border-zinc-100">
-                                                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
-                                                     {i + 1}
-                                                 </span>
-                                                 <p className="text-zinc-700">{insight}</p>
-                                             </div>
-                                         ))}
-                                     </div>
-                                </section>
+                                {digestData.insights && Array.isArray(digestData.insights) && digestData.insights.length > 0 && (
+                                  <section>
+                                       <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4">Key Insights</h3>
+                                       <div className="grid gap-3">
+                                           {digestData.insights.map((insight: string, i: number) => (
+                                               <div key={i} className="flex gap-4 p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                                                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+                                                       {i + 1}
+                                                   </span>
+                                                   <p className="text-zinc-700">{insight}</p>
+                                               </div>
+                                           ))}
+                                       </div>
+                                  </section>
+                                )}
                              </div>
                          </div>
                       )}
