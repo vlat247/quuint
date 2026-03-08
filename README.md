@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quint 🧠
 
-## Getting Started
+> **Turn Telegram chaos into clear, structured knowledge.**
 
-First, run the development server:
+Quint is a B2B AI SaaS designed to help you extract the core value from noisy Telegram channels. It provides structured summaries, semantic search, and topic grouping to keep your knowledge base clean and actionable.
+
+## ✨ Key Features
+
+- **Channel Analysis:** AI-powered analysis of any public Telegram channel using LLaMA 3.3 70B.
+- **Folder Digests:** Group related channels into folders and generate aggregated weekly digests, finding the signal in the noise.
+- **Semantic Search:** Find answers across your saved channel analyses instead of just matching keywords.
+- **Insights & Topic Grouping:** Automatically extract key insights, actionable steps, and trending topics.
+- **Realtime UI:** Beautiful, responsive UI built with Next.js App Router, Tailwind CSS, and shadcn/ui.
+
+## 🛠 Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org/) (App Router, React 19)
+- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
+- **Language:** TypeScript
+- **Database & Auth:** [Supabase](https://supabase.com/)
+- **AI Models:** LLaMA 3.3 70B via [Groq](https://groq.com/) & [Jina AI](https://jina.ai/) for embeddings (via Python backend)
+- **Package Manager:** `pnpm`
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Make sure you have [Node.js](https://nodejs.org/) (v20+) and **pnpm** installed on your machine.
+
+### 1. Clone the repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/vlat247/quuint.git
+cd quuint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install dependencies
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Setup Environment Variables
 
-## Learn More
+Create a `.env.local` file in the root directory and add the following variables:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# LLM APIs
+GROQ_API_KEY=your_groq_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Telegram configuration (used for analysis)
+TG_SESSION=your_telegram_session
 
-## Deploy on Vercel
+# Optional: Custom Backend URL (defaults to production Render backend)
+NEXT_PUBLIC_BACKEND_URL=https://quint-backend-xq3u.onrender.com
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. Run the Development Server
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
+
+## 📁 Project Structure
+
+This Next.js application strictly uses the **App Router** paradigm:
+
+- `/app` — Next.js routing, pages, and layouts (`page.tsx`, `layout.tsx`, `actions.ts`). Server Actions are preferred over API routes.
+- `/components` — Reusable React components (UI primitives built on shadcn/ui and feature components).
+- `/lib` — Utility functions, API clients, and Supabase client configuration.
+- `/public` — Static assets.
+
+## 🧑‍💻 Development Workflow
+
+1. **Server First:** Prefer server components by default. Use `"use client"` only when interactive client-side logic is required.
+2. **Styling:** Always use Tailwind utility classes. No custom CSS unless absolutely necessary. Keep styling declarative.
+3. **Data Fetching:** Use Next.js Server Actions (`app/actions.ts`) for mutations and server components for data fetching.
+
+## 🤝 Contributing
+
+Contributions to Quint are welcome! Please ensure you follow the existing code style (strict TypeScript, functional components, Tailwind CSS) and open a Pull Request indicating the purpose of your changes.
+
+## 📜 License
+
+[MIT License](LICENSE)
