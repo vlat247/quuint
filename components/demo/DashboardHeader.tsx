@@ -1,6 +1,11 @@
 "use client";
 
 import { ChevronRight, Home, Bell, Search, Menu } from "lucide-react";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface DashboardHeaderProps {
   folderName?: string;
@@ -51,9 +56,29 @@ export function DashboardHeader({ folderName, isSidebarCollapsed, onHomeClick, o
               className="h-9 w-64 rounded-md border border-zinc-200 bg-zinc-50 pl-9 pr-4 text-sm outline-none focus:border-zinc-400 focus:ring-0 transition-all"
             />
          </div>
-         <button className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors">
-            <Bell className="h-7 w-7 md:h-5 md:w-5" />
-         </button>
+         <HoverCard openDelay={0}>
+           <HoverCardTrigger asChild>
+             <button className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors">
+                <Bell className="h-7 w-7 md:h-5 md:w-5" />
+             </button>
+           </HoverCardTrigger>
+           <HoverCardContent className="w-80 p-0 mr-4 mt-2 shadow-lg rounded-xl overflow-hidden border-zinc-200 bg-white">
+             <div className="flex flex-col">
+               <div className="px-4 py-3 border-b border-zinc-100 bg-zinc-50 flex justify-between items-center">
+                 <h4 className="text-sm font-semibold text-zinc-900">Notifications</h4>
+                 <span className="text-xs text-zinc-600 bg-zinc-200 px-2 py-0.5 rounded-full font-medium">0 new</span>
+               </div>
+               <div className="p-8 text-center flex flex-col items-center justify-center text-zinc-500 bg-white">
+                 <Bell className="h-8 w-8 text-zinc-300 mb-3" />
+                 <p className="text-sm font-medium text-zinc-900 mb-1">You're all caught up!</p>
+                 <p className="text-xs">No new notifications right now.</p>
+               </div>
+               <div className="px-4 py-2 border-t border-zinc-100 bg-zinc-50 text-center">
+                 <button className="text-xs text-zinc-500 hover:text-zinc-900 font-medium transition-colors">View all notifications</button>
+               </div>
+             </div>
+           </HoverCardContent>
+         </HoverCard>
          <button 
             onClick={onProfileClick}
             className="ml-2 h-10 w-10 md:h-8 md:w-8 rounded-full bg-gradient-to-tr from-zinc-900 to-zinc-700 shadow-md ring-2 ring-white hover:ring-zinc-200 transition-all" 
