@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { analyzeChannel, createFolder, generateDigest, searchAnalyses } from "@/app/actions";
 import { AccountModal } from "@/components/demo/AccountModal";
 import { FolderModal } from "@/components/demo/FolderModal";
+import { PlansModal } from "@/components/demo/PlansModal";
 import { ICON_MAP } from "@/components/demo/icons";
 import { supabase } from "@/lib/supabase/client";
 
@@ -21,6 +22,8 @@ function DemoPageContent() {
   const [activeView, setActiveView] = useState<"home" | "folders" | "history" | "settings">("home");
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
+  const [language, setLanguage] = useState<"en" | "ru">("en");
   const [userNickname, setUserNickname] = useState<string | undefined>();
   const [userEmail, setUserEmail] = useState<string | undefined>();
 
@@ -299,6 +302,9 @@ function DemoPageContent() {
             userNickname={userNickname}
             userEmail={userEmail}
             onOpenAccountModal={() => setIsAccountModalOpen(true)}
+            onOpenPlansModal={() => setIsPlansModalOpen(true)}
+            language={language}
+            setLanguage={setLanguage}
           />
         )}
       </main>
@@ -334,6 +340,10 @@ function DemoPageContent() {
           setIsFolderModalOpen(false);
           setActiveView("folders");
         }}
+      />
+      <PlansModal
+        isOpen={isPlansModalOpen}
+        onClose={() => setIsPlansModalOpen(false)}
       />
     </div>
   );
