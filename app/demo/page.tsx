@@ -530,9 +530,9 @@ function DemoPageContent() {
       {activeView === "folders" && !selectedFolderId && (
         <button
           onClick={() => setIsFolderModalOpen(true)}
-          className="fixed bottom-[104px] right-6 h-16 w-16 flex items-center justify-center rounded-full bg-zinc-900 text-white shadow-xl hover:bg-black hover:scale-105 active:scale-95 transition-all z-40"
+          className="fixed bottom-[104px] right-6 h-14 w-14 flex items-center justify-center rounded-full bg-zinc-900 text-white shadow-xl hover:bg-black hover:scale-105 active:scale-95 transition-all z-40"
         >
-          <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
         </button>
       )}
 
