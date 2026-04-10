@@ -55,8 +55,8 @@ export function SettingsView({
           {/* Animated Background Gradient */}
           <div className="absolute inset-0 bg-linear-to-br from-indigo-600 via-purple-600 to-pink-500 group-hover:scale-105 transition-transform duration-500" />
           
-          {/* Glass Overlay for Depth */}
-          <div className="absolute inset-x-0 top-0 h-1/2 bg-white/10 backdrop-blur-3xl" />
+          {/* Subtle Glow Overlay (Replaces the sharp h-1/2 line) */}
+          <div className="absolute inset-x-0 top-0 bottom-0 bg-linear-to-b from-white/20 via-transparent to-transparent opacity-80" />
           
           {/* Decorative Sparkle Glow */}
           <div className="absolute -top-12 -right-12 h-40 w-40 bg-white/20 blur-3xl rounded-full group-hover:bg-white/30 transition-colors" />
