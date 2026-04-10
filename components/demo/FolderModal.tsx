@@ -51,102 +51,114 @@ export function FolderModal({ isOpen, onClose, onCreate }: CreateFolderModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md scale-100 rounded-2xl bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-zinc-900">Create New Folder</h2>
-          <button onClick={onClose} className="rounded-full p-1 hover:bg-zinc-100 text-zinc-500 transition-colors">
-            <X className="h-5 w-5" />
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom duration-300 overflow-hidden">
+      {/* Header */}
+      <div className="flex-none px-5 pt-10 pb-4 flex items-center justify-between border-b border-zinc-100">
+        <div className="flex items-center gap-3">
+          <button onClick={onClose} className="rounded-full p-2 hover:bg-zinc-100 text-zinc-900 transition-colors">
+            <X className="h-6 w-6" />
           </button>
+          <h2 className="text-xl font-bold text-zinc-900">New Knowledge Base</h2>
         </div>
+        <button 
+          onClick={handleSubmit} 
+          type="submit"
+          form="folder-form"
+          className="text-blue-500 font-bold text-sm hover:opacity-80 transition-opacity"
+        >
+          Create
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Icon Picker */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-2">Folder Icon</label>
-            <div className="grid grid-cols-5 gap-2">
-              {Object.entries(ICON_MAP).map(([iconName, IconComponent]) => (
-                <button
-                  key={iconName}
-                  type="button"
-                  onClick={() => setSelectedIconName(iconName)}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${
-                    selectedIconName === iconName
-                      ? "bg-zinc-900 text-white shadow-md ring-2 ring-zinc-900 ring-offset-2"
-                      : "bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
-                  }`}
-                  title={iconName}
-                >
-                  <IconComponent className="h-5 w-5 mb-1" />
-                </button>
-              ))}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-5 py-8">
+        <div className="w-full max-w-lg mx-auto">
+          <form id="folder-form" onSubmit={handleSubmit} className="space-y-8 pb-10">
+            {/* Icon Picker */}
+            <div>
+              <label className="block text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Select Icon</label>
+              <div className="grid grid-cols-5 gap-3">
+                {Object.entries(ICON_MAP).map(([iconName, IconComponent]) => (
+                  <button
+                    key={iconName}
+                    type="button"
+                    onClick={() => setSelectedIconName(iconName)}
+                    className={`flex flex-col items-center justify-center h-14 rounded-2xl transition-all ${
+                      selectedIconName === iconName
+                        ? "bg-zinc-900 text-white shadow-lg scale-105"
+                        : "bg-zinc-50 text-zinc-400 hover:bg-zinc-100"
+                    }`}
+                  >
+                    <IconComponent className="h-6 w-6" />
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div>
-             <label className="block text-sm font-medium text-zinc-700 mb-1">Folder Name</label>
-             <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. News"
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-all font-medium"
-             />
-          </div>
+            <div>
+               <label className="block text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Folder Name</label>
+               <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Crypto Research"
+                  className="w-full rounded-[16px] border border-zinc-200 bg-white px-4 py-4 text-zinc-900 text-lg placeholder:text-zinc-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all font-medium"
+               />
+            </div>
 
-          <div>
-             <label className="block text-sm font-medium text-zinc-700 mb-1">Channels</label>
-             <div className="space-y-2">
-               {channels.map((ch, i) => (
-                 <div key={i} className="flex items-center gap-2">
-                   <input
-                     type="text"
-                     value={ch}
-                     onChange={(e) => updateChannel(i, e.target.value)}
-                     placeholder="@channel_name"
-                     className="flex-1 rounded-lg border border-zinc-200 px-3 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 transition-all"
-                   />
-                   {channels.length > 1 && (
-                     <button
-                       type="button"
-                       onClick={() => removeChannel(i)}
-                       className="p-2 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                     >
-                       <Trash2 className="h-4 w-4" />
-                     </button>
-                   )}
-                 </div>
-               ))}
-               <button
-                 type="button"
-                 onClick={addChannel}
-                 className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors px-1 py-1"
-               >
-                 <Plus className="h-4 w-4" />
-                 Add channel
-               </button>
-             </div>
-          </div>
+            <div>
+               <label className="block text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Telegram Channels</label>
+               <div className="space-y-3">
+                 {channels.map((ch, i) => (
+                   <div key={i} className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-200">
+                     <div className="flex-1 relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">@</span>
+                        <input
+                          type="text"
+                          value={ch}
+                          onChange={(e) => updateChannel(i, e.target.value)}
+                          placeholder="channel_name"
+                          className="w-full rounded-[16px] border border-zinc-200 bg-white pl-9 pr-4 py-4 text-zinc-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all"
+                        />
+                     </div>
+                     {channels.length > 1 && (
+                       <button
+                         type="button"
+                         onClick={() => removeChannel(i)}
+                         className="h-12 w-12 flex items-center justify-center rounded-[16px] text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                       >
+                         <Trash2 className="h-5 w-5" />
+                       </button>
+                     )}
+                   </div>
+                 ))}
+                 <button
+                   type="button"
+                   onClick={addChannel}
+                   className="w-full flex items-center justify-center gap-2 py-4 rounded-[16px] border border-dashed border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:border-zinc-300 transition-all font-medium"
+                 >
+                   <Plus className="h-5 w-5" />
+                   Add another channel
+                 </button>
+               </div>
+            </div>
 
-          {error && <p className="text-sm text-red-600 font-medium animate-in fade-in">{error}</p>}
-
-          <div className="flex gap-3 pt-4 border-t border-zinc-100 mt-6">
+            {error && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600 font-medium animate-in fade-in">
+                {error}
+              </div>
+            )}
+            
             <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-zinc-200 px-4 py-2.5 font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+                type="submit"
+                className="w-full h-16 rounded-[20px] bg-zinc-900 text-white font-bold text-lg hover:bg-black active:scale-[0.98] transition-all shadow-xl shadow-zinc-200 mt-4"
             >
-              Cancel
+                Create Knowledge Base
             </button>
-            <button
-              type="submit"
-              className="flex-1 rounded-lg bg-zinc-900 px-4 py-2.5 font-medium text-white hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-200"
-            >
-              Create Folder
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
+
   );
 }
