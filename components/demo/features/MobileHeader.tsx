@@ -14,7 +14,7 @@ export function MobileHeader({
   onProfileClick 
 }: MobileHeaderProps) {
   return (
-    <header className="flex-none px-5 pt-10 pb-3 flex justify-between items-center z-10 relative">
+    <header className="flex-none px-4 pt-6 pb-2 flex justify-between items-center z-10 relative">
       <button onClick={onProfileClick} className="active:scale-95 transition-transform">
         <div className="h-10 w-10 rounded-full bg-zinc-200 flex items-center justify-center">
           <span className="text-sm font-semibold text-zinc-600">
