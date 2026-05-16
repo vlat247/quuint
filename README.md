@@ -1,5 +1,22 @@
-# Quint 🧠
-
+                                                            
+                                                            
+                                  ██                        
+  ░████░                          ██                        
+  ██████                          ██                 ██     
+ ▒██  ██▒                                            ██     
+ ██▒  ▒██  ██    ██  ██    ██   ████     ██░████   ███████  
+ ██    ██  ██    ██  ██    ██   ████     ███████▓  ███████  
+ ██    ██  ██    ██  ██    ██     ██     ███  ▒██    ██     
+ ██    ██  ██    ██  ██    ██     ██     ██    ██    ██     
+ ██    ██  ██    ██  ██    ██     ██     ██    ██    ██     
+ ██▒  ▒██  ██    ██  ██    ██     ██     ██    ██    ██     
+ ▒██  ██▓  ██▒  ███  ██▒  ███     ██     ██    ██    ██░    
+  ██████░  ▓███████  ▓███████  ████████  ██    ██    █████  
+  ░█████    ▓███░██   ▓███░██  ████████  ██    ██    ░████  
+     ░██▒                                                   
+      ░█                                                    
+                                                            
+                                                            
 > **Turn Telegram chaos into clear, structured knowledge.**
 
 Quint is a B2B AI SaaS designed to help you extract the core value from noisy Telegram channels. It provides structured summaries, semantic search, and topic grouping to keep your knowledge base clean and actionable.
